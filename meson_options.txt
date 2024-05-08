@@ -1,1 +1,1 @@
-option('arch', type : 'combo', choices: ['amd64', 'aarch64'])
+option('arch', type : 'combo', choices: ['amd64', 'riscv64', 'aarch64'])
