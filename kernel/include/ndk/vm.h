@@ -21,14 +21,14 @@ typedef uintptr_t vaddr;
 extern paddr REAL_HHDM_START;
 
 enum pageuse {
-  kPageUseFree = 1,
-  kPageUseInternal,
+	kPageUseFree = 1,
+	kPageUseInternal,
 };
 
 typedef struct page {
-  paddr pfn;
-  short usage;
-  TAILQ_ENTRY(page) entry;
+	paddr pfn;
+	short usage;
+	TAILQ_ENTRY(page) entry;
 } page_t;
 
 /*
