@@ -1,4 +1,5 @@
 #include <ndk/ndk.h>
+#include <ndk/cpudata.h>
 #include <stdatomic.h>
 #include <stddef.h>
 #include <string.h>
@@ -64,4 +65,9 @@ void spinlock_acquire(spinlock_t *spinlock)
 void spinlock_release(spinlock_t *spinlock)
 {
 	atomic_flag_clear(&spinlock->flag);
+}
+
+void cpudata_setup(cpudata_t *cpudata)
+{
+	cpudata_port_setup(&cpudata->port_data);
 }

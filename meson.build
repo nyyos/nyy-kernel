@@ -16,6 +16,10 @@ freestanding_c_args = [
   '-fno-pic',
 ]
 
+if get_option('ubsan')
+  freestanding_c_args += '-fsanitize=undefined' 
+endif
+
 if (arch == 'amd64')
   meson_cpu_family = 'x86_64'
   cpu = 'amd64'

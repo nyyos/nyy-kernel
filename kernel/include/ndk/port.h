@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef AMD64
+#if defined(AMD64)
 #include "amd64.h"
 #elif defined(__riscv)
 #if __riscv_xlen == 64

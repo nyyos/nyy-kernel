@@ -12,8 +12,14 @@ typedef struct spinlock {
 void spinlock_acquire(spinlock_t *spinlock);
 void spinlock_release(spinlock_t *spinlock);
 
+extern spinlock_t pac_lock;
 void pac_putc(int ch, void *);
 
-#define printf_wrapper(PUTC, ...) ({ npf_pprintf(PUTC, NULL, __VA_ARGS__); })
+#define printf_wrapper(PUTC, ...)                     \
+	({                                            \
+		spinlock_acquire(&pac_lock);          \
+		npf_pprintf(PUTC, NULL, __VA_ARGS__); \
+		spinlock_release(&pac_lock);          \
+	})
 
 #define pac_printf(...) printf_wrapper(pac_putc, __VA_ARGS__)

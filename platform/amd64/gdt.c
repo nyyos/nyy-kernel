@@ -33,15 +33,6 @@ typedef struct [[gnu::packed]] gdt {
 	gdt_tss_entry_t tss;
 } gdt_t;
 
-enum gdt_entries {
-	kGdtNull = 0,
-	kGdtKernelCode,
-	kGdtKernelData,
-	kGdtUserData,
-	kGdtUserCode,
-	kGdtTss,
-};
-
 static gdt_t g_gdt;
 static spinlock_t g_tsslock;
 
@@ -80,7 +71,6 @@ void cpu_gdt_init()
 	gdt_make_entry(&g_gdt, kGdtUserData, 0, 0, 0xf2, 0);
 	gdt_make_entry(&g_gdt, kGdtUserCode, 0, 0, 0xfa, 0x20);
 	gdt_tss_entry(&g_gdt);
-	cpu_gdt_load();
 }
 
 extern void cpu_gdt_load_(gdtr_t *gdtr, int cs, int ss);

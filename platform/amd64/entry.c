@@ -1,12 +1,17 @@
 #include <limine.h>
 #include <nanoprintf.h>
+#include <string.h>
 #include <ndk/ndk.h>
 #include <ndk/vm.h>
+#include <ndk/cpudata.h>
+#include <ndk/port.h>
 
+#include "idt.h"
 #include "gdt.h"
+#include "asm.h"
 
 #define LIMINE_REQ __attribute__((used, section(".requests")))
-#define COM1 0x3f8 // COM1
+#define COM1 0x3f8
 
 LIMINE_REQ
 static volatile LIMINE_BASE_REVISION(2);
@@ -29,27 +34,13 @@ LIMINE_REQ static volatile struct limine_hhdm_request hhdm_request = {
 	.revision = 0
 };
 
-static void hcf()
-{
-	for (;;) {
-		asm volatile("cli;hlt");
-	}
-}
+static cpudata_t bsp_data;
 
-static inline void outb(uint16_t port, uint8_t val)
-{
-	asm volatile("outb %b0, %w1" : : "a"(val), "Nd"(port) : "memory");
-}
-
-static inline uint8_t inb(uint16_t port)
-{
-	uint8_t ret;
-	__asm__ volatile("inb %w1, %b0" : "=a"(ret) : "Nd"(port) : "memory");
-	return ret;
-}
+spinlock_t pac_lock;
 
 static void serial_init()
 {
+	SPINLOCK_INIT(&pac_lock);
 	outb(COM1 + 1, 0x00); // Disable all interrupts
 	outb(COM1 + 3, 0x80); // Enable DLAB (set baud rate divisor)
 	outb(COM1 + 0, 0x03); // Set divisor to 3 (lo byte) 38400 baud
@@ -66,13 +57,32 @@ void pac_putc(int c, void *ctx)
 	outb(COM1, c);
 }
 
+void cpudata_port_setup(cpudata_port_t *cpudata)
+{
+	cpudata->self = cpudata;
+	wrmsr(kMsrGsBase, (uint64_t)cpudata->self);
+}
+
+static void cpu_common_init(cpudata_t *cpudata)
+{
+	cpu_gdt_load();
+	cpu_idt_load();
+
+	memset(cpudata, 0x0, sizeof(cpudata_t));
+	cpudata_setup(cpudata);
+}
+
 void _start(void)
 {
 	REAL_HHDM_START = PADDR(hhdm_request.response->offset);
 
-	cpu_gdt_init();
-
 	serial_init();
+
+	cpu_gdt_init();
+	cpu_idt_init();
+
+	cpu_common_init(&bsp_data);
+	cpudata()->bsp = true;
 
 	pac_printf("Nyy/amd64 (" __DATE__ " " __TIME__ ")\r\n");
 

@@ -1,3 +1,4 @@
-kernel_sources = files('lib/log.c', 'lib/std.c')
+kernel_sources = []
 
+subdir('lib')
 subdir('vm')
