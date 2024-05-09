@@ -1,10 +1,11 @@
 #include <ndk/ndk.h>
 #include <ndk/port.h>
 #include <ndk/vm.h>
+#include <string.h>
 #include <sys/queue.h>
 
 typedef struct region {
-	paddr base;
+	paddr_t base;
 	size_t pagecnt;
 
 	TAILQ_ENTRY(region) entry;
@@ -16,7 +17,7 @@ static TAILQ_HEAD(regionlist, region) regionlist;
 static TAILQ_HEAD(pagelist, page) pagelist;
 static spinlock_t page_lock;
 
-paddr REAL_HHDM_START;
+paddr_t REAL_HHDM_START;
 
 void pm_initialize()
 {
@@ -25,12 +26,12 @@ void pm_initialize()
 	SPINLOCK_INIT(&page_lock);
 }
 
-void pm_add_region(paddr base, size_t length)
+void pm_add_region(paddr_t base, size_t length)
 {
 	region_t *region;
 	size_t i, used;
 
-	region = (region_t *)P2V(base);
+	region = (region_t *)P2V(base).addr;
 	region->pagecnt = length / PAGE_SIZE;
 	region->base = base;
 	TAILQ_INSERT_TAIL(&regionlist, region, entry);
@@ -43,7 +44,8 @@ void pm_add_region(paddr base, size_t length)
 
 	for (i = 0; i < region->pagecnt; i++) {
 		region->pages[i].usage = kPageUseFree;
-		region->pages[i].pfn = (region->base + i * PAGE_SIZE) >> 12;
+		region->pages[i].pfn = (region->base.addr + i * PAGE_SIZE) >>
+				       12;
 	}
 
 	for (i = 0; i < used / PAGE_SIZE; i++) {
@@ -54,16 +56,26 @@ void pm_add_region(paddr base, size_t length)
 		TAILQ_INSERT_TAIL(&pagelist, &region->pages[i], entry);
 	}
 
-	pac_printf("added pm region 0x%lx (%ld pages)\n", base,
+	pac_printf("added pm region 0x%lx (%ld pages)\n", base.addr,
 		   length / PAGE_SIZE);
 }
 
 page_t *pm_allocate()
 {
+	page_t *page;
 	spinlock_acquire(&page_lock);
-	page_t *page = TAILQ_FIRST(&pagelist);
+	page = TAILQ_FIRST(&pagelist);
 	TAILQ_REMOVE(&pagelist, page, entry);
 	spinlock_release(&page_lock);
+	return page;
+}
+
+page_t *pm_allocate_zeroed()
+{
+	page_t *page;
+	page = pm_allocate();
+	vaddr_t adr = PG2V(page);
+	memset((void *)adr.addr, 0x0, PAGE_SIZE);
 	return page;
 }
 

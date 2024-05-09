@@ -39,7 +39,7 @@ void pac_putc(int c, void *ctx)
 
 void _start(void)
 {
-	REAL_HHDM_START = hhdm_request.response->offset;
+	REAL_HHDM_START = PADDR(hhdm_request.response->offset);
 
 	pac_printf("Nyy/amd64 (" __DATE__ " " __TIME__ ")\r\n");
 
@@ -49,7 +49,7 @@ void _start(void)
 	for (size_t i = 0; i < memmap_request.response->entry_count; i++) {
 		struct limine_memmap_entry *entry = entries[i];
 		if (entry->type == LIMINE_MEMMAP_USABLE) {
-			pm_add_region(entry->base, entry->length);
+			pm_add_region(PADDR(entry->base), entry->length);
 		}
 	}
 	pac_printf("initialized pm\n");

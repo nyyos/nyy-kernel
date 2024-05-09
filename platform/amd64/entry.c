@@ -3,6 +3,8 @@
 #include <ndk/ndk.h>
 #include <ndk/vm.h>
 
+#include "gdt.h"
+
 #define LIMINE_REQ __attribute__((used, section(".requests")))
 #define COM1 0x3f8 // COM1
 
@@ -66,7 +68,9 @@ void pac_putc(int c, void *ctx)
 
 void _start(void)
 {
-	REAL_HHDM_START = hhdm_request.response->offset;
+	REAL_HHDM_START = PADDR(hhdm_request.response->offset);
+
+	cpu_gdt_init();
 
 	serial_init();
 
@@ -78,11 +82,11 @@ void _start(void)
 	for (size_t i = 0; i < memmap_request.response->entry_count; i++) {
 		struct limine_memmap_entry *entry = entries[i];
 		if (entry->type == LIMINE_MEMMAP_USABLE) {
-			pm_add_region(entry->base, entry->length);
+			pm_add_region(PADDR(entry->base), entry->length);
 		}
 	}
-	pac_printf("initialized pm\n");
+	pac_printf("initialized pm\r\n");
 
-	pac_printf("reached kernel end\n");
+	pac_printf("reached kernel end\r\n");
 	hcf();
 }
