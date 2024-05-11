@@ -1,7 +1,7 @@
 #include "gdt.h"
 #include "idt.h"
-#include "ndk/amd64.h"
-#include "ndk/ndk.h"
+#include <ndk/ndk.h>
+#include <ndk/port.h>
 #include <stdint.h>
 
 #if defined(AMD64)
