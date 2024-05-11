@@ -72,16 +72,14 @@ struct tu_function_type_mismatch {
 	struct tu_source_location location;
 };
 
-#define print pac_printf
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 static void tu_print_location(const char *message,
 			      struct tu_source_location loc)
 {
-	print("tinyubsan: %s at file %s %d:%d\n", message, loc.file, loc.line,
-	      loc.column);
+	pac_printf("tinyubsan: %s at file %s %d:%d\n", message, loc.file,
+		   loc.line, loc.column);
 }
 
 void __ubsan_handle_add_overflow(struct tu_overflow_data *data)

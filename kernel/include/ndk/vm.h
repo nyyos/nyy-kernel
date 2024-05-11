@@ -41,10 +41,13 @@ enum pageuse {
 	kPageUseInternal,
 };
 
+struct region;
+
 typedef struct page {
 	uint64_t pfn;
 	short usage;
 	TAILQ_ENTRY(page) entry;
+	struct region *region;
 } page_t;
 
 /*
@@ -61,3 +64,4 @@ void pm_add_region(paddr_t base, size_t length);
 page_t *pm_allocate();
 page_t *pm_allocate_zeroed();
 void pm_free(page_t *page);
+page_t *pm_lookup(paddr_t paddr);

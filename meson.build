@@ -4,6 +4,10 @@ arch = get_option('arch')
 
 add_languages('c')
 
+warnings = [
+  '-Wno-comment', # added because of warning in nanoprintf ??
+]
+
 freestanding_c_args = [
   '-fno-strict-aliasing',
   '-fwrapv',
@@ -14,6 +18,7 @@ freestanding_c_args = [
   '-fno-stack-check',
   '-fno-pie',
   '-fno-pic',
+  warnings,
 ]
 
 if get_option('ubsan')
@@ -47,6 +52,11 @@ elif (arch == 'riscv64')
   freestanding_c_args += [
     '-march=rv64imac'
   ]
+elif (arch == 'linux')
+  freestanding_c_args = [
+    warnings,
+    '-DNYYLINUX'
+  ]
 else
   message('\n\t' + arch + ' not supported by Nyy')
   error('\n\tbad arch')
@@ -69,4 +79,6 @@ if (arch == 'amd64')
   subdir('platform/amd64')
 elif (arch == 'riscv64')
   subdir('platform/riscv64-virt')
+elif (arch == 'linux')
+  subdir('platform/linux')
 endif

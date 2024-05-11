@@ -1,5 +1,6 @@
 #include <ndk/ndk.h>
 #include <ndk/cpudata.h>
+#include <stdint.h>
 #include <stdatomic.h>
 #include <stddef.h>
 #include <string.h>
@@ -69,5 +70,6 @@ void spinlock_release(spinlock_t *spinlock)
 
 void cpudata_setup(cpudata_t *cpudata)
 {
+	memset(cpudata, 0x0, sizeof(cpudata_t));
 	cpudata_port_setup(&cpudata->port_data);
 }

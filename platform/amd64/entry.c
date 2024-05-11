@@ -68,8 +68,14 @@ static void cpu_common_init(cpudata_t *cpudata)
 	cpu_gdt_load();
 	cpu_idt_load();
 
-	memset(cpudata, 0x0, sizeof(cpudata_t));
 	cpudata_setup(cpudata);
+}
+
+cpudata_port_t *get_port_cpudata()
+{
+	cpudata_port_t *data = 0;
+	asm volatile("mov %%gs:0x0, %0" : "=r"(data)::"memory");
+	return data;
 }
 
 void _start(void)

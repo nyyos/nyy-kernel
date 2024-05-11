@@ -42,10 +42,13 @@ void pm_add_region(paddr_t base, size_t length)
 		return;
 	}
 
+	pac_printf("pagecnt: %ld\n", region->pagecnt);
+
 	for (i = 0; i < region->pagecnt; i++) {
 		region->pages[i].usage = kPageUseFree;
 		region->pages[i].pfn = (region->base.addr + i * PAGE_SIZE) >>
 				       12;
+		region->pages[i].region = region;
 	}
 
 	for (i = 0; i < used / PAGE_SIZE; i++) {
@@ -53,7 +56,11 @@ void pm_add_region(paddr_t base, size_t length)
 	}
 
 	for (; i < length / PAGE_SIZE; i++) {
+#if PM_SORTED_INSERT == 0
 		TAILQ_INSERT_TAIL(&pagelist, &region->pages[i], entry);
+#else
+		pm_free(&region->pages[i]);
+#endif
 	}
 
 	pac_printf("added pm region 0x%lx (%ld pages)\n", base.addr,
@@ -82,6 +89,37 @@ page_t *pm_allocate_zeroed()
 void pm_free(page_t *page)
 {
 	spinlock_acquire(&page_lock);
+#if PM_SORTED_INSERT == 0
 	TAILQ_INSERT_HEAD(&pagelist, page, entry);
+#else
+	page_t *elm, *nearest_page = nullptr;
+	TAILQ_FOREACH(elm, &pagelist, entry)
+	{
+		if (elm->pfn > page->pfn)
+			break;
+		nearest_page = elm;
+	}
+
+	if (nearest_page == nullptr) {
+		TAILQ_INSERT_HEAD(&pagelist, page, entry);
+	} else {
+		TAILQ_INSERT_AFTER(&pagelist, nearest_page, page, entry);
+	}
+#endif
 	spinlock_release(&page_lock);
+}
+
+page_t *pm_lookup(paddr_t paddr)
+{
+	region_t *region;
+	TAILQ_FOREACH(region, &regionlist, entry)
+	{
+		if ((paddr.addr >= region->base.addr) &&
+		    (paddr.addr <
+		     region->base.addr + region->pagecnt * PAGE_SIZE)) {
+			return &region->pages[(paddr.addr >> 12) -
+					      region->pages[0].pfn];
+		}
+	}
+	return nullptr;
 }

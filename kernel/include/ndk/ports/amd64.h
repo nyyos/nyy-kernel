@@ -14,10 +14,3 @@ static inline void hcf()
 		asm volatile("cli;hlt");
 	}
 }
-
-static inline cpudata_port_t *get_port_cpudata()
-{
-	cpudata_port_t *data = 0;
-	asm volatile("mov %%gs:0x0, %0" : "=r"(data)::"memory");
-	return data;
-}
