@@ -26,7 +26,7 @@ if [ "$pause" = "1" ]; then
 	qemu_args="${qemu_args} -S"
 fi
 
-${QEMU_EXE} -smp 2 -M q35 \
+${QEMU_EXE} -m 256M -smp 2 -M q35 \
 	-cdrom "build-${PORT}/nyy.iso" \
 	-no-shutdown -no-reboot \
 	${qemu_args}

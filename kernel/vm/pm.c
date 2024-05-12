@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <ndk/ndk.h>
 #include <ndk/port.h>
 #include <ndk/vm.h>
@@ -18,6 +19,7 @@ static TAILQ_HEAD(regionlist, region) regionlist;
 static TAILQ_HEAD(pagelist, page) pagelist;
 static spinlock_t page_lock;
 
+vmstat_t vmstat;
 paddr_t REAL_HHDM_START;
 
 void pm_initialize()
@@ -25,6 +27,7 @@ void pm_initialize()
 	TAILQ_INIT(&regionlist);
 	TAILQ_INIT(&pagelist);
 	SPINLOCK_INIT(&page_lock);
+	memset(&vmstat, 0x0, sizeof(vmstat_t));
 }
 
 void pm_add_region(paddr_t base, size_t length)
@@ -36,6 +39,9 @@ void pm_add_region(paddr_t base, size_t length)
 	region->pagecnt = length / PAGE_SIZE;
 	region->base = base;
 	TAILQ_INSERT_TAIL(&regionlist, region, entry);
+
+	vmstat.total += region->pagecnt;
+	vmstat.used += region->pagecnt;
 
 	used = PAGE_ALIGN_UP(sizeof(region_t) +
 			     sizeof(page_t) * length / PAGE_SIZE);
@@ -54,9 +60,7 @@ void pm_add_region(paddr_t base, size_t length)
 		region->pages[i].usage = kPageUseInternal;
 	}
 
-	for (; i < length / PAGE_SIZE; i++) {
-		pm_free(&region->pages[i]);
-	}
+	pm_free_n(&region->pages[i], region->pagecnt - used / PAGE_SIZE);
 
 	pac_printf("added pm region 0x%lx (%ld pages)\n", base.addr,
 		   length / PAGE_SIZE);
@@ -64,86 +68,74 @@ void pm_add_region(paddr_t base, size_t length)
 
 page_t *pm_allocate()
 {
-	page_t *page;
-	spinlock_acquire(&page_lock);
-	page = TAILQ_FIRST(&pagelist);
-	TAILQ_REMOVE(&pagelist, page, entry);
-	spinlock_release(&page_lock);
-	return page;
+	return pm_allocate_n(1);
 }
 
 page_t *pm_allocate_zeroed()
 {
-	page_t *page;
-	page = pm_allocate();
-	vaddr_t adr = PG2V(page);
-	memset((void *)adr.addr, 0x0, PAGE_SIZE);
-	return page;
+	return pm_allocate_n_zeroed(1);
 }
 
 void pm_free(page_t *page)
 {
-	spinlock_acquire(&page_lock);
-#if CONFIG_PM_SORT == 1
-	page_t *elm, *nearest_page = nullptr;
-	TAILQ_FOREACH(elm, &pagelist, entry)
-	{
-		if (elm->pfn > page->pfn)
-			break;
-		nearest_page = elm;
-	}
-
-	if (nearest_page == nullptr) {
-		TAILQ_INSERT_HEAD(&pagelist, page, entry);
-	} else {
-		TAILQ_INSERT_AFTER(&pagelist, nearest_page, page, entry);
-	}
-#else
-	TAILQ_INSERT_HEAD(&pagelist, page, entry);
-#endif
-	spinlock_release(&page_lock);
+	pm_free_n(page, 1);
 }
 
-#ifdef CONFIG_PM_ALLOC_NPAGES
 page_t *pm_allocate_n(size_t n)
 {
-	page_t *page, *prev, *start;
-	size_t count;
+	page_t *elm, *prev, *start = nullptr;
+	size_t count = 0;
 
-	count = 0;
-
-	if (n == 0)
+	if (vmstat.total - vmstat.used < n)
 		return nullptr;
-	if (n == 1)
-		return pm_allocate();
+	else if (n == 0)
+		return nullptr;
 
 	spinlock_acquire(&page_lock);
 
-	TAILQ_FOREACH(page, &pagelist, entry)
+	if (n == 1) {
+		elm = TAILQ_FIRST(&pagelist);
+		TAILQ_REMOVE(&pagelist, elm, entry);
+		vmstat.used += 1;
+		goto cleanup;
+	}
+
+	TAILQ_FOREACH(elm, &pagelist, entry)
 	{
-		prev = TAILQ_PREV(page, pagelist, entry);
+		prev = TAILQ_PREV(elm, pagelist, entry);
 		if (prev == nullptr) {
+			count = 0;
+			start = nullptr;
 			continue;
 		}
-		if (prev->pfn + 1 == page->pfn) {
+		if (prev->pfn + 1 == elm->pfn) {
 			if (count == 0)
 				start = prev;
-			count++;
-			if (count > n) {
+			if (count == n) {
 				for (size_t i = 0; i < n; i++) {
 					TAILQ_REMOVE(&pagelist, &start[i],
 						     entry);
 				}
 				break;
 			}
+			count++;
 		} else {
 			count = 0;
 			start = nullptr;
 		}
 	}
 
+	if (count < n)
+		start = nullptr;
+
+	if (start != nullptr)
+		vmstat.used += n;
+
+	elm = start;
+
+cleanup:
 	spinlock_release(&page_lock);
-	return start;
+	return elm;
 }
 
 page_t *pm_allocate_n_zeroed(size_t n)
@@ -158,13 +150,59 @@ page_t *pm_allocate_n_zeroed(size_t n)
 	return pages;
 }
 
+// skips search for page if:
+// * empty list
+// * smaller than queue head
+// * bigger than queue tail
 void pm_free_n(page_t *pages, size_t n)
 {
-	for (size_t i = 0; i < n; i++) {
-		pm_free(&pages[i]);
+	page_t *elm = nullptr, *after = nullptr, *last = nullptr;
+	spinlock_acquire(&page_lock);
+
+	elm = TAILQ_FIRST(&pagelist);
+	if (elm != nullptr && pages[0].pfn < elm->pfn) {
+		for (size_t i = 0; i < n; i++) {
+			// 'reverse' insert of pages
+			TAILQ_INSERT_HEAD(&pagelist, &pages[n - i - 1], entry);
+		}
+		goto cleanup;
 	}
-}
+	last = TAILQ_LAST(&pagelist, pagelist);
+	if (elm == nullptr || last->pfn < pages[0].pfn) {
+		for (size_t i = 0; i < n; i++) {
+			TAILQ_INSERT_TAIL(&pagelist, &pages[i], entry);
+		}
+		goto cleanup;
+	}
+
+	TAILQ_FOREACH(elm, &pagelist, entry)
+	{
+		if (elm->pfn < pages[0].pfn) {
+			after = elm;
+			break;
+		}
+	}
+
+	for (size_t i = 0; i < n; i++) {
+		TAILQ_INSERT_AFTER(&pagelist, after, &pages[i], entry);
+		after = &pages[i];
+	}
+
+cleanup:;
+#ifdef CONFIG_PM_CHECK
+	page_t *tmp;
+	TAILQ_FOREACH(tmp, &pagelist, entry)
+	{
+		page_t *prev = TAILQ_PREV(tmp, pagelist, entry);
+		if (prev == nullptr)
+			continue;
+		assert(prev->pfn < tmp->pfn);
+	}
 #endif
+
+	vmstat.used -= n;
+	spinlock_release(&page_lock);
+}
 
 page_t *pm_lookup(paddr_t paddr)
 {
@@ -179,4 +217,10 @@ page_t *pm_lookup(paddr_t paddr)
 		}
 	}
 	return nullptr;
+}
+
+void vmstat_dump()
+{
+	pac_printf("** VMSTAT **\n total: %ld\n used: %ld\n free: %ld\n",
+		   vmstat.total, vmstat.used, vmstat.total - vmstat.used);
 }

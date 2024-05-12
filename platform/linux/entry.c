@@ -1,17 +1,16 @@
 #define _GNU_SOURCE
 
 #include <stdlib.h>
-#include "ndk/cpudata.h"
-#include "ndk/ndk.h"
-#include <ndk/port.h>
-#include <ndk/util.h>
-#include <ndk/vm.h>
 #include <stddef.h>
-
 #include <stdio.h>
 #include <sys/resource.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include "ndk/cpudata.h"
+#include "ndk/ndk.h"
+#include "ndk/irql.h"
+#include "ndk/util.h"
+#include "ndk/vm.h"
 
 // basically the number of threads spawned
 #define LINUX_KCPU_COUNT 1
@@ -40,6 +39,14 @@ void cpudata_port_setup(cpudata_port_t *cpudata)
 cpudata_port_t *get_port_cpudata()
 {
 	return t_cpudata;
+}
+
+void irql_set(irql_t irql)
+{
+}
+irql_t irql_current()
+{
+	return 0;
 }
 
 int main()
@@ -76,6 +83,7 @@ int main()
 
 	pm_initialize();
 	pm_add_region(PADDR(0), PMEM_PAGECNT * PAGE_SIZE);
+	vmstat_dump();
 
 	return EXIT_SUCCESS;
 }

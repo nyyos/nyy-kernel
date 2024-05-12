@@ -1,3 +1,15 @@
 mainmenu "Nyy Kernel configuration"
 
+menu "Sanitizers"
+
+config UBSAN
+  bool "Enable UBSAN"
+  default n
+
+config PM_CHECK
+  bool "Enable PM checks on free" 
+  default n
+
+endmenu
+
 source "$(ROOT)/kernel/Kconfig"

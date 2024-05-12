@@ -1,1 +1,5 @@
-kernel_sources = files('log.c', 'std.c', 'tinyubsan.c')
+kernel_sources += files('log.c', 'std.c')
+
+if conf.get('CONFIG_UBSAN', 'n') == 'y'
+  kernel_sources += files('tinyubsan.c')
+endif

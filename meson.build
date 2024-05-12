@@ -40,7 +40,7 @@ freestanding_c_args = [
   warnings,
 ]
 
-if get_option('ubsan')
+if conf.get('CONFIG_UBSAN', 'n') == 'y'
   freestanding_c_args += '-fsanitize=undefined' 
 endif
 

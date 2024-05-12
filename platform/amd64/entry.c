@@ -103,6 +103,8 @@ void _start(void)
 	}
 	pac_printf("initialized pm\r\n");
 
+	vmstat_dump();
+
 	pac_printf("reached kernel end\r\n");
 	hcf();
 }

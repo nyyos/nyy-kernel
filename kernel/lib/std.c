@@ -73,3 +73,13 @@ void cpudata_setup(cpudata_t *cpudata)
 	memset(cpudata, 0x0, sizeof(cpudata_t));
 	cpudata_port_setup(&cpudata->port_data);
 }
+
+void __assert_fail(const char *assertion, const char *file, unsigned int line,
+		   const char *function)
+{
+	npf_pprintf(
+		pac_putc, nullptr,
+		"Assertion failure at %s:%d in function %s\nAssertion: %s\n",
+		file, line, function, assertion);
+	hcf();
+}
