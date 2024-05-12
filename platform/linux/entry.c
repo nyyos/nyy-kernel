@@ -77,16 +77,5 @@ int main()
 	pm_initialize();
 	pm_add_region(PADDR(0), PMEM_PAGECNT * PAGE_SIZE);
 
-	page_t *p, *p2, *p3, *p4;
-	p = pm_allocate();
-	p2 = pm_allocate();
-	p3 = pm_allocate();
-	p4 = pm_allocate();
-	pm_free(p2);
-	pm_free(p4);
-	pm_free(p);
-	pm_free(p3);
-	printf("%ld\n", pm_allocate()->pfn);
-
 	return EXIT_SUCCESS;
 }

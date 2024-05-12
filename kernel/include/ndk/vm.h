@@ -2,6 +2,7 @@
 
 #include <ndk/port.h>
 #include <ndk/util.h>
+#include <nyyconf.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/queue.h>
@@ -63,5 +64,10 @@ void pm_add_region(paddr_t base, size_t length);
 // allocate/free functions
 page_t *pm_allocate();
 page_t *pm_allocate_zeroed();
+#ifdef CONFIG_PM_ALLOC_NPAGES
+page_t *pm_allocate_n(size_t n);
+page_t *pm_allocate_n_zeroed(size_t n);
+void pm_free_n(page_t *pages, size_t n);
+#endif
 void pm_free(page_t *page);
 page_t *pm_lookup(paddr_t paddr);

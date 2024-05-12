@@ -7,5 +7,7 @@ nyy = executable('nyy',
   link_args: ['-nostdlib', '-static', '-lgcc',
     '-Wl,-T'+meson.current_source_dir()+'/linker.ld'
   ],
-  dependencies: []
+  dependencies: [
+    kernel_deps
+  ]
 )

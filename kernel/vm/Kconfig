@@ -1,0 +1,12 @@
+menu "Memory subsystem"
+
+config PM_SORT
+  bool "Sorted insert of pages"
+  default y
+
+config PM_ALLOC_NPAGES
+  bool "Alloc contig. physical memory regions"
+  default y
+  depends on PM_SORT
+
+endmenu

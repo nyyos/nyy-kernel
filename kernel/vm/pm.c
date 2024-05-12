@@ -3,6 +3,7 @@
 #include <ndk/vm.h>
 #include <string.h>
 #include <sys/queue.h>
+#include <nyyconf.h>
 
 typedef struct region {
 	paddr_t base;
@@ -42,8 +43,6 @@ void pm_add_region(paddr_t base, size_t length)
 		return;
 	}
 
-	pac_printf("pagecnt: %ld\n", region->pagecnt);
-
 	for (i = 0; i < region->pagecnt; i++) {
 		region->pages[i].usage = kPageUseFree;
 		region->pages[i].pfn = (region->base.addr + i * PAGE_SIZE) >>
@@ -56,11 +55,7 @@ void pm_add_region(paddr_t base, size_t length)
 	}
 
 	for (; i < length / PAGE_SIZE; i++) {
-#if PM_SORTED_INSERT == 0
-		TAILQ_INSERT_TAIL(&pagelist, &region->pages[i], entry);
-#else
 		pm_free(&region->pages[i]);
-#endif
 	}
 
 	pac_printf("added pm region 0x%lx (%ld pages)\n", base.addr,
@@ -89,9 +84,7 @@ page_t *pm_allocate_zeroed()
 void pm_free(page_t *page)
 {
 	spinlock_acquire(&page_lock);
-#if PM_SORTED_INSERT == 0
-	TAILQ_INSERT_HEAD(&pagelist, page, entry);
-#else
+#if CONFIG_PM_SORT == 1
 	page_t *elm, *nearest_page = nullptr;
 	TAILQ_FOREACH(elm, &pagelist, entry)
 	{
@@ -105,9 +98,73 @@ void pm_free(page_t *page)
 	} else {
 		TAILQ_INSERT_AFTER(&pagelist, nearest_page, page, entry);
 	}
+#else
+	TAILQ_INSERT_HEAD(&pagelist, page, entry);
 #endif
 	spinlock_release(&page_lock);
 }
+
+#ifdef CONFIG_PM_ALLOC_NPAGES
+page_t *pm_allocate_n(size_t n)
+{
+	page_t *page, *prev, *start;
+	size_t count;
+
+	count = 0;
+
+	if (n == 0)
+		return nullptr;
+	if (n == 1)
+		return pm_allocate();
+
+	spinlock_acquire(&page_lock);
+
+	TAILQ_FOREACH(page, &pagelist, entry)
+	{
+		prev = TAILQ_PREV(page, pagelist, entry);
+		if (prev == nullptr) {
+			continue;
+		}
+		if (prev->pfn + 1 == page->pfn) {
+			if (count == 0)
+				start = prev;
+			count++;
+			if (count > n) {
+				for (size_t i = 0; i < n; i++) {
+					TAILQ_REMOVE(&pagelist, &start[i],
+						     entry);
+				}
+				break;
+			}
+		} else {
+			count = 0;
+			start = nullptr;
+		}
+	}
+
+	spinlock_release(&page_lock);
+	return start;
+}
+
+page_t *pm_allocate_n_zeroed(size_t n)
+{
+	page_t *pages;
+	pages = pm_allocate_n(n);
+	if (!pages)
+		return nullptr;
+	for (size_t i = 0; i < n; i++) {
+		memset((void *)PG2V(&pages[i]).addr, 0x0, PAGE_SIZE);
+	}
+	return pages;
+}
+
+void pm_free_n(page_t *pages, size_t n)
+{
+	for (size_t i = 0; i < n; i++) {
+		pm_free(&pages[i]);
+	}
+}
+#endif
 
 page_t *pm_lookup(paddr_t paddr)
 {

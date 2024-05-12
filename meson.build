@@ -1,5 +1,24 @@
 project('Nyy')
 
+keyval = import('keyval')
+loadedconfig = keyval.load('.config')
+conf = configuration_data(loadedconfig)
+prog_python = find_program('python3')
+autoconf_header = custom_target('gen-autoconf',
+  input : [meson.source_root() + '/.config'],
+  output : ['autoconf.h'],
+  env : {'KCONFIG_CONFIG': meson.source_root() + '/.config', 'ROOT': meson.source_root()},
+  command : [prog_python, meson.source_root() + '/vendor/kconfiglib/genconfig.py', '--header-path', '@OUTPUT0@', meson.source_root()+'/Kconfig']
+)
+autoconf_dep = declare_dependency(sources: autoconf_header)
+
+kernel_deps = [autoconf_dep]
+
+config_h = configure_file(
+  input: 'config.template',
+  output: 'nyyconf.h',
+  configuration: conf)
+
 arch = get_option('arch')
 
 add_languages('c')
@@ -25,7 +44,10 @@ if get_option('ubsan')
   freestanding_c_args += '-fsanitize=undefined' 
 endif
 
+build_limine = false
+
 if (arch == 'amd64')
+  build_limine = true
   meson_cpu_family = 'x86_64'
   cpu = 'amd64'
   freestanding_c_args += [
@@ -41,12 +63,14 @@ if (arch == 'amd64')
     '-DAMD64'
   ]
 elif (arch == 'aarch64')
+  build_limine = true
   meson_cpu_family = 'aarch64'
   cpu = 'aarch64'
   freestanding_c_args += [
     '-mgeneral-regs-only'
   ]
 elif (arch == 'riscv64')
+  build_limine = true
   meson_cpu_family = 'riscv64'
   cpu = meson_cpu_family
   freestanding_c_args += [
@@ -63,16 +87,21 @@ else
 endif
 
 freestanding_include_dirs = [ include_directories(
-  'vendor/limine',
   'kernel/include',
   'kernel'
 )]
 
-executable(
-  'limine',
-  'vendor/limine/limine.c',
-  native: true
-)
+if(build_limine)
+  freestanding_include_dirs += [include_directories('vendor/limine')]
+endif
+
+if(build_limine)
+  executable(
+    'limine',
+    'vendor/limine/limine.c',
+    native: true
+  )
+endif
 
 subdir('kernel')
 if (arch == 'amd64')

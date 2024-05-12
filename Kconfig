@@ -1,0 +1,3 @@
+mainmenu "Nyy Kernel configuration"
+
+source "$(ROOT)/kernel/Kconfig"

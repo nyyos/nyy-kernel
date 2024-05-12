@@ -3,5 +3,5 @@ nyy = executable('nyy',
   c_args: [freestanding_c_args,'-std=gnu2x'],
   include_directories: [freestanding_include_dirs],
   link_args: [],
-  dependencies: []
+  dependencies: [kernel_deps]
 )
