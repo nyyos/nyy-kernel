@@ -1,5 +1,6 @@
 #include "gdt.h"
 #include "idt.h"
+#include "ndk/irql.h"
 #include <ndk/ndk.h>
 #include <ndk/port.h>
 #include <stdint.h>
@@ -80,4 +81,16 @@ void handle_irq(void *frame, int number)
 
 void handle_timer_irq(void *frame)
 {
+}
+
+irql_t irql_current()
+{
+	uint64_t current;
+	asm volatile("mov %%cr8, %0" : "=r"(current));
+	return current;
+}
+
+void irql_set(irql_t irql)
+{
+	asm volatile("mov %0, %%cr8" ::"r"((uint64_t)irql));
 }
