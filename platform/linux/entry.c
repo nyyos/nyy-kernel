@@ -21,7 +21,6 @@
 #define PMEM_PAGECNT (MiB(8) / PAGE_SIZE)
 
 size_t PAGE_SIZE;
-spinlock_t pac_lock;
 
 static cpudata_t g_cpudatas[LINUX_KCPU_COUNT];
 static __thread cpudata_port_t *t_cpudata;
@@ -51,7 +50,7 @@ irql_t irql_current()
 
 int main()
 {
-	SPINLOCK_INIT(&pac_lock);
+	SPINLOCK_INIT(&g_pac_lock);
 	PAGE_SIZE = getpagesize();
 
 	cpudata_setup(&g_cpudatas[0]);

@@ -1,6 +1,6 @@
 #include <limine.h>
 #include <nanoprintf.h>
-#include <string.h>
+
 #include <ndk/ndk.h>
 #include <ndk/vm.h>
 #include <ndk/cpudata.h>
@@ -36,11 +36,8 @@ LIMINE_REQ static volatile struct limine_hhdm_request hhdm_request = {
 
 static cpudata_t bsp_data;
 
-spinlock_t pac_lock;
-
 static void serial_init()
 {
-	SPINLOCK_INIT(&pac_lock);
 	outb(COM1 + 1, 0x00); // Disable all interrupts
 	outb(COM1 + 3, 0x80); // Enable DLAB (set baud rate divisor)
 	outb(COM1 + 0, 0x03); // Set divisor to 3 (lo byte) 38400 baud
@@ -80,6 +77,7 @@ cpudata_port_t *get_port_cpudata()
 
 void _start(void)
 {
+	SPINLOCK_INIT(&g_pac_lock);
 	REAL_HHDM_START = PADDR(hhdm_request.response->offset);
 
 	serial_init();

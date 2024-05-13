@@ -2,6 +2,10 @@ mainmenu "Nyy Kernel configuration"
 
 menu "Sanitizers"
 
+config DISABLE_ASSERTS
+  bool "Disable asserts in code"
+  default n
+
 config UBSAN
   bool "Enable UBSAN"
   default n

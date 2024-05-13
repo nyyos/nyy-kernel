@@ -53,7 +53,6 @@ void pm_add_region(paddr_t base, size_t length)
 		region->pages[i].usage = kPageUseFree;
 		region->pages[i].pfn = (region->base.addr + i * PAGE_SIZE) >>
 				       12;
-		region->pages[i].region = region;
 	}
 
 	for (i = 0; i < used / PAGE_SIZE; i++) {
@@ -156,7 +155,7 @@ page_t *pm_allocate_n_zeroed(size_t n)
 // * bigger than queue tail
 void pm_free_n(page_t *pages, size_t n)
 {
-	page_t *elm = nullptr, *after = nullptr, *last = nullptr;
+	page_t *elm, *after, *last;
 	spinlock_acquire(&page_lock);
 
 	elm = TAILQ_FIRST(&pagelist);
@@ -175,6 +174,7 @@ void pm_free_n(page_t *pages, size_t n)
 		goto cleanup;
 	}
 
+	after = nullptr;
 	TAILQ_FOREACH(elm, &pagelist, entry)
 	{
 		if (elm->pfn < pages[0].pfn) {

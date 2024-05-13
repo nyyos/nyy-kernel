@@ -1,3 +1,6 @@
+#include "ndk/cpudata.h"
+#include "ndk/irql.h"
+#include <assert.h>
 #include <limine.h>
 #include <nanoprintf.h>
 #include <ndk/ndk.h>
@@ -26,15 +29,23 @@ LIMINE_REQ static volatile struct limine_hhdm_request hhdm_request = {
 	.revision = 0
 };
 
-static void hcf()
-{
-	for (;;) {
-		asm volatile("wfi");
-	}
-}
-
 void pac_putc(int c, void *ctx)
 {
+}
+
+irql_t irql_current()
+{
+	assert(!"todo");
+}
+
+void irql_set(irql_t irql)
+{
+	assert(!"todo");
+}
+
+void cpudata_port_setup(cpudata_port_t *cpudata)
+{
+	assert(!"todo");
 }
 
 void _start(void)

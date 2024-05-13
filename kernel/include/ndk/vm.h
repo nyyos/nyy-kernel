@@ -53,7 +53,6 @@ typedef struct page {
 	uint64_t pfn;
 	short usage;
 	TAILQ_ENTRY(page) entry;
-	struct region *region;
 } page_t;
 
 /*

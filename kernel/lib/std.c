@@ -5,6 +5,8 @@
 #include <stddef.h>
 #include <string.h>
 
+spinlock_t g_pac_lock;
+
 void *memset(void *p, int c, size_t n)
 {
 	char *str = (char *)p;
