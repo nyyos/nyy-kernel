@@ -73,8 +73,19 @@ elif (arch == 'riscv64')
   build_limine = true
   meson_cpu_family = 'riscv64'
   cpu = meson_cpu_family
+  if meson.get_compiler('c').get_id() == 'clang'
+    freestanding_c_args += [
+      '-march=rv64imac'
+    ]
+  else
+    freestanding_c_args += [
+      '-march=rv64imac_zicsr_zifencei'
+    ]
+  endif
   freestanding_c_args += [
-    '-march=rv64imac'
+    '-mabi=lp64',
+    '-mno-relax',
+    '-mcmodel=medany'
   ]
 elif (arch == 'linux')
   freestanding_c_args = [

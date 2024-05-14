@@ -29,8 +29,10 @@ LIMINE_REQ static volatile struct limine_hhdm_request hhdm_request = {
 	.revision = 0
 };
 
+unsigned char *uart = (unsigned char *)0x10000000;
 void pac_putc(int c, void *ctx)
 {
+	*uart = c;
 }
 
 irql_t irql_current()
@@ -52,7 +54,10 @@ void _start(void)
 {
 	REAL_HHDM_START = PADDR(hhdm_request.response->offset);
 
-	pac_printf("Nyy/amd64 (" __DATE__ " " __TIME__ ")\r\n");
+	pac_putc('h', NULL);
+	hcf();
+
+	pac_printf("Nyy/riscv64-virt (" __DATE__ " " __TIME__ ")\r\n");
 
 	pm_initialize();
 

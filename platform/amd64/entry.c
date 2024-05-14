@@ -82,13 +82,13 @@ void _start(void)
 
 	serial_init();
 
+	pac_printf("Nyy/amd64 (" __DATE__ " " __TIME__ ")\r\n");
+
 	cpu_gdt_init();
 	cpu_idt_init();
 
 	cpu_common_init(&bsp_data);
 	cpudata()->bsp = true;
-
-	pac_printf("Nyy/amd64 (" __DATE__ " " __TIME__ ")\r\n");
 
 	pm_initialize();
 
