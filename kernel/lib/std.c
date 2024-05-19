@@ -56,18 +56,20 @@ void *memmove(void *dest, const void *src, size_t n)
 	return dest;
 }
 
-void spinlock_acquire(spinlock_t *spinlock)
+irql_t spinlock_acquire(spinlock_t *spinlock, irql_t at)
 {
 	while (atomic_flag_test_and_set(&spinlock->flag)) {
 #ifdef __x86_64__
 		asm volatile("pause");
 #endif
 	}
+	return irql_raise(at);
 }
 
-void spinlock_release(spinlock_t *spinlock)
+void spinlock_release(spinlock_t *spinlock, irql_t to)
 {
 	atomic_flag_clear(&spinlock->flag);
+	irql_lower(to);
 }
 
 void cpudata_setup(cpudata_t *cpudata)

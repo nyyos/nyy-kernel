@@ -90,7 +90,7 @@ page_t *pm_allocate_n(size_t n)
 	else if (n == 0)
 		return nullptr;
 
-	spinlock_acquire(&page_lock);
+	irql_t spinlock = spinlock_acquire(&page_lock, HIGH_LEVEL);
 
 	if (n == 1) {
 		elm = TAILQ_FIRST(&pagelist);
@@ -133,7 +133,7 @@ page_t *pm_allocate_n(size_t n)
 	elm = start;
 
 cleanup:
-	spinlock_release(&page_lock);
+	spinlock_release(&page_lock, spinlock);
 	return elm;
 }
 
@@ -156,7 +156,7 @@ page_t *pm_allocate_n_zeroed(size_t n)
 void pm_free_n(page_t *pages, size_t n)
 {
 	page_t *elm, *after, *last;
-	spinlock_acquire(&page_lock);
+	irql_t spinlock = spinlock_acquire(&page_lock, HIGH_LEVEL);
 
 	elm = TAILQ_FIRST(&pagelist);
 	if (elm != nullptr && pages[0].pfn < elm->pfn) {
@@ -201,7 +201,7 @@ cleanup:;
 #endif
 
 	vmstat.used -= n;
-	spinlock_release(&page_lock);
+	spinlock_release(&page_lock, spinlock);
 }
 
 page_t *pm_lookup(paddr_t paddr)

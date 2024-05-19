@@ -1,6 +1,6 @@
 nyy = executable('nyy', 
   'entry.c', 'gdt.c', 'int.c',
-  'gdt.S', 'stubs.S',
+  'gdt.S', 'stubs.S', 'vm.c',
   kernel_sources,
   c_args: [ freestanding_c_args, '-std=gnu2x'],
   include_directories: [freestanding_include_dirs],

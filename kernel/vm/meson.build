@@ -1,1 +1,1 @@
-kernel_sources += files('pm.c')
+kernel_sources += files('pm.c', 'map.c')
