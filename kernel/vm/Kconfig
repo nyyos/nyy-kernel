@@ -1,3 +1,7 @@
 menu "Memory subsystem"
 
+config HHDM_HUGEPAGES
+  bool "Try mapping HHDM with hugepages"
+  default n 
+
 endmenu

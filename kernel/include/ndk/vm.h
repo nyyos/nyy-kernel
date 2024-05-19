@@ -14,8 +14,12 @@ typedef struct vmstat {
 } vmstat_t;
 
 enum pageuse {
+	// used nowhere
 	kPageUseFree = 1,
+	// used by pm structures
 	kPageUseInternal,
+	// used by pagetables or vm structures ...
+	kPageUseVm,
 };
 
 enum vmflags {
@@ -70,10 +74,11 @@ void pm_add_region(paddr_t base, size_t length);
 // allocate/free functions
 // all allocate functions are implemented using the pm_allocate_n function
 // all free functions are implemented using the pm_free_n function
-page_t *pm_allocate();
-page_t *pm_allocate_zeroed();
-page_t *pm_allocate_n(size_t n);
-page_t *pm_allocate_n_zeroed(size_t n);
+// @IRQL ANY
+page_t *pm_allocate(short usage);
+page_t *pm_allocate_zeroed(short usage);
+page_t *pm_allocate_n(size_t n, short usage);
+page_t *pm_allocate_n_zeroed(size_t n, short usage);
 void pm_free_n(page_t *pages, size_t n);
 void pm_free(page_t *page);
 page_t *pm_lookup(paddr_t paddr);

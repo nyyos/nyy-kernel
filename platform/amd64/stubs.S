@@ -8,7 +8,7 @@
 
 .macro FAULT_STUB type, number=0
 irqStub\number:
-.if \type != .L_typeFaultNoCode
+.if \type == .L_typeFaultNoCode
 push $0
 .endif
 # do swapgs

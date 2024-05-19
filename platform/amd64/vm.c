@@ -44,7 +44,7 @@ uint64_t *pte_walk(vm_map_t *map, vaddr_t vaddr, unsigned int flags)
 	} else {
 		if ((flags & pteFlagCreateNew) == 0)
 			return nullptr;
-		page_t *page = pm_allocate_zeroed();
+		page_t *page = pm_allocate_zeroed(kPageUseVm);
 		assert(page);
 		pml4[pml4_index] = PG2P(page).addr | ptePresent | pteUser |
 				   pteWrite;
@@ -59,7 +59,7 @@ uint64_t *pte_walk(vm_map_t *map, vaddr_t vaddr, unsigned int flags)
 	} else {
 		if ((flags & pteFlagCreateNew) == 0)
 			return nullptr;
-		page_t *page = pm_allocate_zeroed();
+		page_t *page = pm_allocate_zeroed(kPageUseVm);
 		assert(page);
 		pml3[pml3_index] = PG2P(page).addr | ptePresent | pteUser |
 				   pteWrite;
@@ -74,7 +74,7 @@ uint64_t *pte_walk(vm_map_t *map, vaddr_t vaddr, unsigned int flags)
 	} else {
 		if ((flags & pteFlagCreateNew) == 0)
 			return nullptr;
-		page_t *page = pm_allocate_zeroed();
+		page_t *page = pm_allocate_zeroed(kPageUseVm);
 		assert(page);
 		pml2[pml2_index] = PG2P(page).addr | ptePresent | pteUser |
 				   pteWrite;
@@ -166,7 +166,7 @@ void vm_port_activate(vm_map_t *map)
 
 void vm_port_init_map(vm_map_t *map)
 {
-	page_t *pml4_page = pm_allocate_zeroed();
+	page_t *pml4_page = pm_allocate_zeroed(kPageUseVm);
 	assert(pml4_page);
 	map->portstate.cr3 = PG2P(pml4_page);
 }

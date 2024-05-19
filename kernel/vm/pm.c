@@ -65,14 +65,14 @@ void pm_add_region(paddr_t base, size_t length)
 		   length / PAGE_SIZE);
 }
 
-page_t *pm_allocate()
+page_t *pm_allocate(short usage)
 {
-	return pm_allocate_n(1);
+	return pm_allocate_n(1, usage);
 }
 
-page_t *pm_allocate_zeroed()
+page_t *pm_allocate_zeroed(short usage)
 {
-	return pm_allocate_n_zeroed(1);
+	return pm_allocate_n_zeroed(1, usage);
 }
 
 void pm_free(page_t *page)
@@ -80,7 +80,7 @@ void pm_free(page_t *page)
 	pm_free_n(page, 1);
 }
 
-page_t *pm_allocate_n(size_t n)
+page_t *pm_allocate_n(size_t n, short usage)
 {
 	page_t *elm, *prev, *start = nullptr;
 	size_t count = 0;
@@ -127,8 +127,15 @@ page_t *pm_allocate_n(size_t n)
 	if (count < n)
 		start = nullptr;
 
-	if (start != nullptr)
+	if (start != nullptr) {
 		vmstat.used += n;
+		for (size_t i = 0; i < n; i++) {
+#ifdef CONFIG_PM_CHECK
+			assert(start[i].usage == kPageUseFree);
+#endif
+			start[i].usage = usage;
+		}
+	}
 
 	elm = start;
 
@@ -137,10 +144,10 @@ cleanup:
 	return elm;
 }
 
-page_t *pm_allocate_n_zeroed(size_t n)
+page_t *pm_allocate_n_zeroed(size_t n, short usage)
 {
 	page_t *pages;
-	pages = pm_allocate_n(n);
+	pages = pm_allocate_n(n, usage);
 	if (!pages)
 		return nullptr;
 	for (size_t i = 0; i < n; i++) {
@@ -188,7 +195,11 @@ void pm_free_n(page_t *pages, size_t n)
 		after = &pages[i];
 	}
 
-cleanup:;
+cleanup:
+	for (size_t i = 0; i < n; i++) {
+		pages[i].usage = kPageUseFree;
+	}
+
 #ifdef CONFIG_PM_CHECK
 	page_t *tmp;
 	TAILQ_FOREACH(tmp, &pagelist, entry)
@@ -197,6 +208,7 @@ cleanup:;
 		if (prev == nullptr)
 			continue;
 		assert(prev->pfn < tmp->pfn);
+		assert(tmp->usage == kPageUseFree);
 	}
 #endif
 

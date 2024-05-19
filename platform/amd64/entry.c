@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include <ndk/ndk.h>
+#include <nyyconf.h>
 #include <ndk/vm.h>
 #include <ndk/cpudata.h>
 #include <ndk/port.h>
@@ -67,30 +68,6 @@ extern char addr_rodata_start[];
 extern char addr_requests_end[];
 extern char addr_requests_start[];
 
-static const char *memmap_type_to_string(int type)
-{
-	switch (type) {
-	case LIMINE_MEMMAP_USABLE:
-		return "Usable";
-	case LIMINE_MEMMAP_RESERVED:
-		return "Reserved";
-	case LIMINE_MEMMAP_ACPI_RECLAIMABLE:
-		return "ACPI Reclaimable";
-	case LIMINE_MEMMAP_ACPI_NVS:
-		return "ACPI NVS";
-	case LIMINE_MEMMAP_BAD_MEMORY:
-		return "Bad Memory";
-	case LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE:
-		return "Bootloader Reclaimable";
-	case LIMINE_MEMMAP_KERNEL_AND_MODULES:
-		return "Kernel and Modules";
-	case LIMINE_MEMMAP_FRAMEBUFFER:
-		return "Framebuffer";
-	default:
-		return "Unknown Memory Type";
-	}
-}
-
 static void remap_kernel()
 {
 	paddr_t paddr = PADDR(address_request.response->physical_base);
@@ -130,9 +107,11 @@ static void remap_kernel()
 
 		// map initial unaligned part until aligned to 2MB
 		while (base < end) {
+#ifdef CONFIG_HHDM_HUGEPAGES
 			if ((base % MiB(2)) == 0) {
 				break;
 			}
+#endif
 
 			vm_port_map(kmap, PADDR(base),
 				    VADDR(REAL_HHDM_START.addr + base),
@@ -140,11 +119,11 @@ static void remap_kernel()
 			base += PAGE_SIZE;
 		}
 
+#ifdef CONFIG_HHDM_HUGEPAGES
 		// map using the largest possible pages
 		while (base < end) {
 			// XXX: check if gb pages are supported with cpuid
 			if ((base % GiB(1)) == 0 && (base + GiB(1) <= end)) {
-				pac_printf("mapping with gib pages\n");
 				vm_port_map(kmap, PADDR(base),
 					    VADDR(REAL_HHDM_START.addr + base),
 					    cacheflags,
@@ -164,11 +143,7 @@ static void remap_kernel()
 				base += PAGE_SIZE;
 			}
 		}
-
-		pac_printf(
-			"mapped memmap entry: 0x%lx to 0x%lx length 0x%lx (mapped upto 0x%lx, type %s)\n",
-			entry->base, end, entry->length, base,
-			memmap_type_to_string(entry->type));
+#endif
 
 		assert(base <= end);
 	}
