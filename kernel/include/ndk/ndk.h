@@ -18,11 +18,14 @@ void spinlock_release(spinlock_t *spinlock, irql_t before);
 extern spinlock_t g_pac_lock;
 void pac_putc(int ch, void *);
 
-#define printf_wrapper(PUTC, ...)                                       \
-	({                                                              \
-		irql_t old = spinlock_acquire(&g_pac_lock, HIGH_LEVEL); \
-		npf_pprintf(PUTC, NULL, __VA_ARGS__);                   \
-		spinlock_release(&g_pac_lock, old);                     \
+#define printf_wrapper(PUTC, ...)                                  \
+	({                                                         \
+		irql_t _printf_old_irql =                          \
+			spinlock_acquire(&g_pac_lock, HIGH_LEVEL); \
+		npf_pprintf(PUTC, NULL, __VA_ARGS__);              \
+		spinlock_release(&g_pac_lock, _printf_old_irql);   \
 	})
 
 #define pac_printf(...) printf_wrapper(pac_putc, __VA_ARGS__)
+
+void kmalloc_init();

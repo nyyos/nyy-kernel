@@ -93,9 +93,27 @@ static inline void invlpg(vaddr_t vaddr)
 	asm volatile("invlpg %0" ::"m"(vaddr.addr));
 }
 
-void vm_port_unmap(vm_map_t *map, vaddr_t vaddr)
+void vm_port_unmap(vm_map_t *map, vaddr_t vaddr, uint64_t flags)
 {
-	assert(!"todo");
+	unsigned int walk_flags = 0;
+
+	if (flags & kVmHuge) {
+		switch (flags >> kVmHugeShift) {
+		// log2 values
+		case 21:
+			walk_flags |= pteFlag2MB;
+			break;
+		case 30:
+			walk_flags |= pteFlag1GB;
+			break;
+		default:
+			assert(!"invalid huge page size");
+		}
+	}
+	uint64_t *pte = pte_walk(map, vaddr, walk_flags);
+	if (!pte)
+		return;
+	*pte &= ~(ptePresent | pteAddress);
 }
 
 void vm_port_map(vm_map_t *map, paddr_t paddr, vaddr_t vaddr, uint64_t cache,

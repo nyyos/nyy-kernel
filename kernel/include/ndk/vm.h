@@ -20,6 +20,8 @@ enum pageuse {
 	kPageUseInternal,
 	// used by pagetables or vm structures ...
 	kPageUseVm,
+	// wired in kernel
+	kPageUseWired,
 };
 
 enum vmflags {
@@ -97,7 +99,7 @@ void vm_setup_kmap();
 
 void vm_port_init_map(vm_map_t *map);
 
-void vm_port_unmap(vm_map_t *map, vaddr_t vaddr);
+void vm_port_unmap(vm_map_t *map, vaddr_t vaddr, uint64_t flags);
 void vm_port_map(vm_map_t *map, paddr_t paddr, vaddr_t vaddr, uint64_t cache,
 		 uint64_t flags);
 page_t *vm_port_translate(vm_map_t *map, vaddr_t addr);

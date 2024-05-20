@@ -1,3 +1,4 @@
+#include "lib/vmem.h"
 #include <limine.h>
 #include <nanoprintf.h>
 #include <assert.h>
@@ -206,6 +207,8 @@ void _start(void)
 	pac_printf("initialized pm\r\n");
 
 	remap_kernel();
+
+	kmalloc_init();
 
 	vmstat_dump();
 

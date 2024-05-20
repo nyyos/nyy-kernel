@@ -1,10 +1,12 @@
 #pragma once
 
 #include <stdint.h>
-
 #include <ndk/addr.h>
 
 #define PAGE_SIZE 0x1000
+
+#define MEM_KERNEL_START 0xFFFFE00000000000
+#define MEM_KERNEL_SIZE TiB(1)
 
 typedef struct cpudata_port {
 	struct cpudata_port *self;

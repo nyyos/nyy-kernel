@@ -7,10 +7,10 @@
 
 #define DIV_ROUNDUP(a, b) (((a) + ((b)-1)) / (b))
 
-#define KiB(o) ((size_t)(1 << 10) * (o))
-#define MiB(o) ((size_t)(1 << 20) * (o))
-#define GiB(o) ((size_t)(1 << 30) * (o))
-#define TiB(o) ((size_t)(1 << 40) * (o))
+#define KiB(o) ((size_t)(1L << 10) * (o))
+#define MiB(o) ((size_t)(1L << 20) * (o))
+#define GiB(o) ((size_t)(1L << 30) * (o))
+#define TiB(o) ((size_t)(1L << 40) * (o))
 
 #define container_of(ptr, type, member)                            \
 	({                                                         \
