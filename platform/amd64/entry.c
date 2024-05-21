@@ -1,4 +1,3 @@
-#include "lib/vmem.h"
 #include <limine.h>
 #include <nanoprintf.h>
 #include <assert.h>
@@ -9,6 +8,8 @@
 #include <ndk/vm.h>
 #include <ndk/cpudata.h>
 #include <ndk/port.h>
+#include <ndk/kmem.h>
+#include <lib/vmem.h>
 
 #include "idt.h"
 #include "gdt.h"
@@ -208,7 +209,11 @@ void _start(void)
 
 	remap_kernel();
 
-	kmalloc_init();
+	kmem_init();
+	for (size_t i = 0; i < 32; i++) {
+		void *p = kmalloc(i * 32 + 1);
+		pac_printf("kmalloc:%p\n", p);
+	}
 
 	vmstat_dump();
 

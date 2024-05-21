@@ -27,5 +27,3 @@ void pac_putc(int ch, void *);
 	})
 
 #define pac_printf(...) printf_wrapper(pac_putc, __VA_ARGS__)
-
-void kmalloc_init();

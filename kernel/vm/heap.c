@@ -7,6 +7,10 @@
 
 static Vmem vmem_va;
 static Vmem vmem_wired;
+static spinlock_t g_bumplock;
+#define BUMP_ARENA_SIZE PAGE_SIZE * 5000
+static char *g_bumparena;
+static size_t g_bump_pos;
 
 static void *allocwired(Vmem *vmem, size_t size, int vmflag)
 {
@@ -40,7 +44,7 @@ static void freewired(Vmem *vmem, void *ptr, size_t size)
 	pac_printf("free wired memory\n");
 }
 
-void kmalloc_init()
+void kmem_init()
 {
 	vmem_bootstrap();
 	vmem_init(&vmem_va, "kernel-va", (void *)MEM_KERNEL_START,
@@ -49,4 +53,22 @@ void kmalloc_init()
 		  &allocwired, &freewired, &vmem_va, 0, 0);
 	pac_printf("created kernel arena (%p-%p)\n", (void *)MEM_KERNEL_START,
 		   (void *)(MEM_KERNEL_START + MEM_KERNEL_SIZE));
+
+	SPINLOCK_INIT(&g_bumplock);
+	g_bump_pos = 0;
+	g_bumparena = vmem_alloc(&vmem_wired, BUMP_ARENA_SIZE, VM_BESTFIT);
+}
+
+void *kmalloc(size_t size)
+{
+	size = ALIGN_UP(size, 16);
+	assert(g_bump_pos + size < BUMP_ARENA_SIZE);
+	char *p = &g_bumparena[g_bump_pos];
+	g_bump_pos += size;
+	return p;
+}
+
+void kfree(void *ptr)
+{
+	// nop
 }

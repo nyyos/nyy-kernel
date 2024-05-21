@@ -143,6 +143,7 @@ void handle_pf(iframe_t *frame)
 
 void handle_fault(iframe_t *frame, int number)
 {
+	spinlock_release(&g_pac_lock, PASSIVE_LEVEL);
 	pac_printf("== FAULT ==\n");
 	pac_printf("cpu state:\n");
 	pac_printf("rax: %016lx  rbx: %016lx\n", frame->rax, frame->rbx);
