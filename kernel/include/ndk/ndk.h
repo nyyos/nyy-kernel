@@ -27,3 +27,8 @@ void pac_putc(int ch, void *);
 	})
 
 #define pac_printf(...) printf_wrapper(pac_putc, __VA_ARGS__)
+
+#define LOG_DEBUG "[ \x1b[35mDBG  \x1b[0m] "
+#define LOG_INFO "[ \x1b[32mINFO \x1b[0m] "
+#define LOG_WARN "[ \x1b[33mWARN \x1b[0m] "
+#define LOG_ERR "[ \x1b[31mERR  \x1b[0m] "

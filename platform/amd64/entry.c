@@ -94,6 +94,10 @@ static void remap_kernel()
 	MAP_SECTION(rodata, kVmRead | kVmGlobal);
 	MAP_SECTION(data, kVmAll | kVmGlobal);
 
+#ifdef CONFIG_HHDM_HUGEPAGES
+	pac_printf(LOG_DEBUG "map HHDM with hugepages\n");
+#endif
+
 	struct limine_memmap_entry **entries = memmap_request.response->entries;
 	for (size_t i = 0; i < memmap_request.response->entry_count; i++) {
 		struct limine_memmap_entry *entry = entries[i];
@@ -151,6 +155,7 @@ static void remap_kernel()
 	}
 
 	vm_port_activate(kmap);
+	pac_printf(LOG_INFO "remapped kernel\n");
 }
 
 void pac_putc(int c, void *ctx)
@@ -188,7 +193,8 @@ void _start(void)
 
 	serial_init();
 
-	pac_printf("Nyy/amd64 (" __DATE__ " " __TIME__ ")\r\n");
+	pac_printf(LOG_INFO "Nyy/amd64 (Built on: " __DATE__ " " __TIME__
+			    ")\r\n");
 
 	cpu_gdt_init();
 	cpu_idt_init();
@@ -205,18 +211,10 @@ void _start(void)
 			pm_add_region(PADDR(entry->base), entry->length);
 		}
 	}
-	pac_printf("initialized pm\r\n");
-
+	pac_printf(LOG_INFO "initialized pm\r\n");
 	remap_kernel();
-
 	kmem_init();
-	for (size_t i = 0; i < 32; i++) {
-		void *p = kmalloc(i * 32 + 1);
-		pac_printf("kmalloc:%p\n", p);
-	}
-
 	vmstat_dump();
-
-	pac_printf("reached kernel end\r\n");
+	pac_printf(LOG_INFO "reached kernel end\r\n");
 	hcf();
 }

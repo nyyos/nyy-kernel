@@ -61,7 +61,7 @@ void pm_add_region(paddr_t base, size_t length)
 
 	pm_free_n(&region->pages[i], region->pagecnt - used / PAGE_SIZE);
 
-	pac_printf("added pm region 0x%lx (%ld pages)\n", base.addr,
+	pac_printf(LOG_DEBUG "added pm region 0x%lx (%ld pages)\n", base.addr,
 		   length / PAGE_SIZE);
 }
 
@@ -233,6 +233,7 @@ page_t *pm_lookup(paddr_t paddr)
 
 void vmstat_dump()
 {
-	pac_printf("** VMSTAT **\n total: %ld\n used: %ld\n free: %ld\n",
-		   vmstat.total, vmstat.used, vmstat.total - vmstat.used);
+	pac_printf(
+		"** VMSTAT **\n total: %ld\n used: %ld\n free: %ld\n** VMSTAT END **\n",
+		vmstat.total, vmstat.used, vmstat.total - vmstat.used);
 }

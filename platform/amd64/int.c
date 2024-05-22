@@ -97,7 +97,7 @@ void cpu_idt_load()
 void handle_pf(iframe_t *frame)
 {
 	int error_code = frame->code;
-	pac_printf("Page Fault Error Code: 0x%x\n", error_code);
+	pac_printf(LOG_DEBUG "Page Fault Error Code: 0x%x\n", error_code);
 	pac_printf("Information: ");
 
 	if (error_code & 0x1) {
