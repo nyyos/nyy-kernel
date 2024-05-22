@@ -93,7 +93,8 @@ page_t *pm_lookup(paddr_t paddr);
 
 void vmstat_dump();
 
-vm_map_t *vm_map_new();
+vm_map_t *vm_map_create();
+void vm_map_destroy(vm_map_t *map);
 vm_map_t *vm_kmap();
 void vm_setup_kmap();
 

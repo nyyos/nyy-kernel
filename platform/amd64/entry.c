@@ -1,3 +1,4 @@
+#include "ndk/ports/amd64.h"
 #include <limine.h>
 #include <nanoprintf.h>
 #include <assert.h>
@@ -44,6 +45,11 @@ LIMINE_REQ static volatile struct limine_kernel_address_request
 		.id = LIMINE_KERNEL_ADDRESS_REQUEST,
 		.revision = 0,
 	};
+
+LIMINE_REQ static volatile struct limine_smp_request smp_request = {
+	.id = LIMINE_SMP_REQUEST,
+	.revision = 0
+};
 
 static cpudata_t bsp_data;
 
@@ -179,6 +185,33 @@ static void cpu_common_init(cpudata_t *cpudata)
 	cpudata_setup(cpudata);
 }
 
+static void smp_entry(struct limine_smp_info *info)
+{
+	// cpudata is allocated on heap
+	vm_port_activate(vm_kmap());
+
+	cpudata_t *localdata = (cpudata_t *)info->extra_argument;
+	cpu_common_init(localdata);
+	localdata->port_data.lapic_id = info->lapic_id;
+
+	// XXX: make this the idle thread of the cpu
+	pac_printf(LOG_INFO "entered kernel on core %d\n", info->lapic_id);
+	hcf();
+}
+
+static void start_cores()
+{
+	struct limine_smp_response *res = smp_request.response;
+	for (size_t i = 0; i < res->cpu_count; i++) {
+		struct limine_smp_info *cpu = res->cpus[i];
+		if (cpu->lapic_id == 0)
+			continue;
+		cpudata_t *cpudata = kmalloc(sizeof(cpudata_t));
+		cpu->extra_argument = (uint64_t)cpudata;
+		cpu->goto_address = smp_entry;
+	}
+}
+
 cpudata_port_t *get_port_cpudata()
 {
 	cpudata_port_t *data = 0;
@@ -215,6 +248,7 @@ void _start(void)
 	remap_kernel();
 	kmem_init();
 	vmstat_dump();
+	start_cores();
 	pac_printf(LOG_INFO "reached kernel end\r\n");
 	hcf();
 }

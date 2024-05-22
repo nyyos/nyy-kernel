@@ -63,9 +63,11 @@ void kmem_init()
 void *kmalloc(size_t size)
 {
 	size = ALIGN_UP(size, 16);
+	irql_t oldirql = spinlock_acquire(&g_bumplock, HIGH_LEVEL);
 	assert(g_bump_pos + size < BUMP_ARENA_SIZE);
 	char *p = &g_bumparena[g_bump_pos];
 	g_bump_pos += size;
+	spinlock_release(&g_bumplock, oldirql);
 	return p;
 }
 
