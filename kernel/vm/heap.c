@@ -4,13 +4,13 @@
 #include <ndk/ndk.h>
 #include <ndk/port.h>
 #include <ndk/vm.h>
+#include <stdatomic.h>
 
 static Vmem vmem_va;
 static Vmem vmem_wired;
-static spinlock_t g_bumplock;
 #define BUMP_ARENA_SIZE PAGE_SIZE * 5000
 static char *g_bumparena;
-static size_t g_bump_pos;
+static atomic_size_t g_bump_pos;
 
 static void *allocwired(Vmem *vmem, size_t size, int vmflag)
 {
@@ -55,7 +55,6 @@ void kmem_init()
 		   (void *)MEM_KERNEL_START,
 		   (void *)(MEM_KERNEL_START + MEM_KERNEL_SIZE));
 
-	SPINLOCK_INIT(&g_bumplock);
 	g_bump_pos = 0;
 	g_bumparena = vmem_alloc(&vmem_wired, BUMP_ARENA_SIZE, VM_BESTFIT);
 }
@@ -63,12 +62,19 @@ void kmem_init()
 void *kmalloc(size_t size)
 {
 	size = ALIGN_UP(size, 16);
-	irql_t oldirql = spinlock_acquire(&g_bumplock, HIGH_LEVEL);
-	assert(g_bump_pos + size < BUMP_ARENA_SIZE);
-	char *p = &g_bumparena[g_bump_pos];
-	g_bump_pos += size;
-	spinlock_release(&g_bumplock, oldirql);
-	return p;
+	size_t oldpos;
+	size_t newpos;
+
+	do {
+		oldpos = atomic_load(&g_bump_pos);
+		newpos = oldpos + size;
+		if (newpos > BUMP_ARENA_SIZE) {
+			assert(!"go implement a slab alloc");
+			return NULL;
+		}
+	} while (!atomic_compare_exchange_weak(&g_bump_pos, &oldpos, newpos));
+
+	return &g_bumparena[oldpos];
 }
 
 void kfree(void *ptr)
