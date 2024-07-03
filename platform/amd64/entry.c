@@ -2,6 +2,7 @@
 #include <limine.h>
 #include <nanoprintf.h>
 #include <assert.h>
+#include <stdatomic.h>
 #include <stdint.h>
 
 #include <ndk/ndk.h>
@@ -185,17 +186,27 @@ static void cpu_common_init(cpudata_t *cpudata)
 	cpudata_setup(cpudata);
 }
 
+struct smp_info {
+	volatile atomic_bool ready;
+	cpudata_t data;
+};
+
 static void smp_entry(struct limine_smp_info *info)
 {
 	// cpudata is allocated on heap
 	vm_port_activate(vm_kmap());
 
-	cpudata_t *localdata = (cpudata_t *)info->extra_argument;
+	struct smp_info *nyy_info = (struct smp_info *)info->extra_argument;
+
+	cpudata_t *localdata = &nyy_info->data;
 	cpu_common_init(localdata);
 	localdata->port_data.lapic_id = info->lapic_id;
 
 	// XXX: make this the idle thread of the cpu
 	pac_printf(LOG_INFO "entered kernel on core %d\n", info->lapic_id);
+
+	atomic_store(&nyy_info->ready, true);
+
 	hcf();
 }
 
@@ -206,10 +217,22 @@ static void start_cores()
 		struct limine_smp_info *cpu = res->cpus[i];
 		if (cpu->lapic_id == 0)
 			continue;
-		cpudata_t *cpudata = kmalloc(sizeof(cpudata_t));
-		cpu->extra_argument = (uint64_t)cpudata;
+		struct smp_info *data = kmalloc(sizeof(struct smp_info));
+		data->ready = false;
+		cpu->extra_argument = (uint64_t)data;
 		cpu->goto_address = smp_entry;
 	}
+	// synchronize all cores being up
+	for (size_t i = 0; i < res->cpu_count; i++) {
+		struct limine_smp_info *cpu = res->cpus[i];
+		if (cpu->lapic_id == 0)
+			continue;
+		struct smp_info *info = (struct smp_info *)cpu->extra_argument;
+		while (atomic_load(&info->ready) != true) {
+			asm volatile("pause");
+		}
+	}
+	pac_printf(LOG_INFO "all cores up");
 }
 
 cpudata_port_t *get_port_cpudata()
@@ -249,6 +272,7 @@ void _start(void)
 	kmem_init();
 	vmstat_dump();
 	start_cores();
-	pac_printf(LOG_INFO "reached kernel end\r\n");
+	assert(false);
+	panic("reached kernel end");
 	hcf();
 }

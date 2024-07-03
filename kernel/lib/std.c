@@ -30,9 +30,7 @@ void cpudata_setup(cpudata_t *cpudata)
 void __assert_fail(const char *assertion, const char *file, unsigned int line,
 		   const char *function)
 {
-	npf_pprintf(
-		pac_putc, nullptr,
-		"Assertion failure at %s:%d in function %s\nAssertion: %s\n",
-		file, line, function, assertion);
-	hcf();
+	char buf[512];
+	npf_snprintf(buf, sizeof(buf), "Assertion failure at %s:%d in function %s\nAssertion: %s\n", file, line, function, assertion);
+	panic(buf);
 }

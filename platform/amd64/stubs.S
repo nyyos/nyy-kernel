@@ -168,12 +168,10 @@ FAULT_STUB .L_typeFaultNoCode, 19
 
 .altmacro
 .set i,32
-.rept 223
+.rept 224
   IRQ_STUB %i
   .set i,i+1
 .endr
-
-SPECIAL_STUB handle_timer_irq, 255
 
 .macro DEC_INT num
 .quad irqStub\num
