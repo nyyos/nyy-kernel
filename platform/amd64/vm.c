@@ -100,6 +100,8 @@ void vm_port_unmap(vm_map_t *map, vaddr_t vaddr, uint64_t flags)
 	if (flags & kVmHuge) {
 		switch (flags >> kVmHugeShift) {
 		// log2 values
+		case 12:
+			break;
 		case 21:
 			walk_flags |= pteFlag2MB;
 			break;
