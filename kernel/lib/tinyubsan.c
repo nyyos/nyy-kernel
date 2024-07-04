@@ -78,7 +78,7 @@ extern "C" {
 static void tu_print_location(const char *message,
 			      struct tu_source_location loc)
 {
-	pac_printf("tinyubsan: %s at file %s %d:%d\n", message, loc.file,
+	printk("tinyubsan: %s at file %s %d:%d\n", message, loc.file,
 		   loc.line, loc.column);
 }
 

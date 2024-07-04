@@ -82,7 +82,7 @@ uint64_t *pte_walk(vm_map_t *map, vaddr_t vaddr, unsigned int flags)
 	}
 
 #if 0
-	pac_printf("idx: %d:%d:%d:%d\n", pml4_index, pml3_index, pml2_index,
+	printk("idx: %d:%d:%d:%d\n", pml4_index, pml3_index, pml2_index,
 		   pml1_index);
 #endif
 	return &pml1[pml1_index];

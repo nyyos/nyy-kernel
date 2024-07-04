@@ -1,8 +1,9 @@
 #include <ndk/ndk.h>
 #include <ndk/port.h>
 #include <stdarg.h>
+#include <string.h>
 
-const char *panic_art =
+static const char *panic_art =
 	"\n"
 	" __  ___  _______ .______      .__   __.  _______  __      \n"
 	"|  |/  / |   ____||   _  \\     |  \\ |  | |   ____||  |     \n"
@@ -20,9 +21,10 @@ const char *panic_art =
 	"                                                           \n"
 	"";
 
-[[gnu::noreturn]] void panic(const char *msg)
+[[gnu::noreturn]] void panic()
 {
-	pac_printf("%s\n%s\nStacktrace:\n", panic_art, msg);
+	_printk_consoles_write(panic_art, strlen(panic_art));
+	printk_locked("Stacktrace:\n");
 
 	uint64_t *rbp, *rip;
 	asm volatile("mov %%rbp, %0" : "=r"(rbp));
@@ -30,11 +32,12 @@ const char *panic_art =
 		rip = rbp + 1;
 		if (*rip == 0)
 			break;
-		pac_printf(" 0x%lx - %s\n", *rip, "TODO: SYMBOL LOOKUP");
+		printk_locked(" 0x%lx - %s\n", *rip,
+			      "TODO: SYMBOL LOOKUP");
 		rbp = (uint64_t *)*rbp;
 	}
 
-	pac_printf("\n");
+	printk_locked("\n");
 
 	hcf();
 }

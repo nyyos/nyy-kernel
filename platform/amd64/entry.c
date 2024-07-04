@@ -1,4 +1,3 @@
-#include "ndk/ports/amd64.h"
 #include <limine.h>
 #include <nanoprintf.h>
 #include <assert.h>
@@ -12,10 +11,15 @@
 #include <ndk/port.h>
 #include <ndk/kmem.h>
 #include <lib/vmem.h>
+#include <dkit/console.h>
+
+#include <flanterm.h>
+#include <backends/fb.h>
 
 #include "idt.h"
 #include "gdt.h"
 #include "asm.h"
+#include <string.h>
 
 #define LIMINE_REQ __attribute__((used, section(".requests")))
 #define COM1 0x3f8
@@ -49,6 +53,11 @@ LIMINE_REQ static volatile struct limine_kernel_address_request
 
 LIMINE_REQ static volatile struct limine_smp_request smp_request = {
 	.id = LIMINE_SMP_REQUEST,
+	.revision = 0
+};
+
+LIMINE_REQ static volatile struct limine_framebuffer_request fb_request = {
+	.id = LIMINE_FRAMEBUFFER_REQUEST,
 	.revision = 0
 };
 
@@ -102,7 +111,7 @@ static void remap_kernel()
 	MAP_SECTION(data, kVmAll | kVmGlobal);
 
 #ifdef CONFIG_HHDM_HUGEPAGES
-	pac_printf(LOG_DEBUG "map HHDM with hugepages\n");
+	printk(DEBUG "map HHDM with hugepages\n");
 #endif
 
 	struct limine_memmap_entry **entries = memmap_request.response->entries;
@@ -162,14 +171,7 @@ static void remap_kernel()
 	}
 
 	vm_port_activate(kmap);
-	pac_printf(LOG_INFO "remapped kernel\n");
-}
-
-void pac_putc(int c, void *ctx)
-{
-	while (!(inb(COM1 + 5) & 0x20))
-		;
-	outb(COM1, c);
+	printk(INFO "remapped kernel\n");
 }
 
 void cpudata_port_setup(cpudata_port_t *cpudata)
@@ -203,7 +205,7 @@ static void smp_entry(struct limine_smp_info *info)
 	localdata->port_data.lapic_id = info->lapic_id;
 
 	// XXX: make this the idle thread of the cpu
-	pac_printf(LOG_INFO "entered kernel on core %d\n", info->lapic_id);
+	printk(INFO "entered kernel on core %d\n", info->lapic_id);
 
 	atomic_store(&nyy_info->ready, true);
 
@@ -232,7 +234,7 @@ static void start_cores()
 			asm volatile("pause");
 		}
 	}
-	pac_printf(LOG_INFO "all cores up");
+	printk(INFO "all cores up\n");
 }
 
 cpudata_port_t *get_port_cpudata()
@@ -242,15 +244,63 @@ cpudata_port_t *get_port_cpudata()
 	return data;
 }
 
+static void serial_putc(int c)
+{
+	while (!(inb(COM1 + 5) & 0x20))
+		;
+	outb(COM1, c);
+}
+
+void serial_write(console_t *, const char *msg, size_t size)
+{
+	for (size_t i = 0; i < size; i++) {
+		serial_putc(msg[i]);
+	}
+}
+
+static console_t serial_console = {
+	.name = "serial",
+	.write = serial_write,
+};
+
+typedef struct fb_console {
+	console_t console;
+	struct flanterm_context *ctx;
+} fb_console_t;
+
+void fb_write(console_t *console, const char *buf, size_t size)
+{
+	fb_console_t *fbcons = (fb_console_t *)console;
+	flanterm_write(fbcons->ctx, buf, size);
+}
+
+static void fb_init()
+{
+	struct limine_framebuffer_response *res = fb_request.response;
+	for (size_t i = 0; i < res->framebuffer_count; i++) {
+		struct limine_framebuffer *fb = res->framebuffers[i];
+		fb_console_t *cons = kmalloc(sizeof(fb_console_t));
+		memset(cons, 0x0, sizeof(fb_console_t));
+		cons->console.name = "limine-flanterm";
+		cons->console.write = fb_write;
+		cons->ctx = flanterm_fb_init(
+			NULL, NULL, fb->address, fb->width, fb->height,
+			fb->pitch, fb->red_mask_size, fb->red_mask_shift,
+			fb->green_mask_size, fb->green_mask_shift,
+			fb->blue_mask_size, fb->blue_mask_shift, NULL, NULL,
+			NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 1, 0, 0, 0);
+		console_add((console_t *)cons);
+	}
+}
+
 void _start(void)
 {
-	SPINLOCK_INIT(&g_pac_lock);
 	REAL_HHDM_START = PADDR(hhdm_request.response->offset);
 
 	serial_init();
+	console_add(&serial_console);
 
-	pac_printf(LOG_INFO "Nyy/amd64 (Built on: " __DATE__ " " __TIME__
-			    ")\r\n");
+	printk(INFO "Nyy/amd64 (Built on: " __DATE__ " " __TIME__ ")\n");
 
 	cpu_gdt_init();
 	cpu_idt_init();
@@ -267,11 +317,11 @@ void _start(void)
 			pm_add_region(PADDR(entry->base), entry->length);
 		}
 	}
-	pac_printf(LOG_INFO "initialized pm\r\n");
+	printk(INFO "initialized pm\n");
 	remap_kernel();
 	kmem_init();
 	vmstat_dump();
+	fb_init();
 	start_cores();
-	panic("reached kernel end");
-	hcf();
+	printk(PANIC "Reached Kernel End\n");
 }

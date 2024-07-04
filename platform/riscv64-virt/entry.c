@@ -57,7 +57,7 @@ void _start(void)
 	pac_putc('h', NULL);
 	hcf();
 
-	pac_printf("Nyy/riscv64-virt (" __DATE__ " " __TIME__ ")\r\n");
+	printk("Nyy/riscv64-virt (" __DATE__ " " __TIME__ ")\r\n");
 
 	pm_initialize();
 
@@ -68,8 +68,8 @@ void _start(void)
 			pm_add_region(PADDR(entry->base), entry->length);
 		}
 	}
-	pac_printf("initialized pm\n");
+	printk("initialized pm\n");
 
-	pac_printf("reached kernel end\n");
+	printk("reached kernel end\n");
 	hcf();
 }

@@ -9,28 +9,29 @@ typedef struct spinlock {
 	atomic_flag flag;
 } spinlock_t;
 
-#define SPINLOCK_INIT(spinlock) atomic_flag_clear(&(spinlock)->flag);
 #define SPINLOCK_WAIT(spinlock) spinlock_acquire(spinlock, HIGH_LEVEL);
-
+#define SPINLOCK_INIT(spinlock) atomic_flag_clear(&(spinlock)->flag);
+// clang-format off
+#define SPINLOCK_INITIALIZER() {0}
+// clang-format on
 irql_t spinlock_acquire(spinlock_t *spinlock, irql_t at);
 void spinlock_release(spinlock_t *spinlock, irql_t before);
 
-extern spinlock_t g_pac_lock;
-void pac_putc(int ch, void *);
+#define INFO "\1"
+#define WARN "\2"
+#define ERR "\3"
+#define DEBUG "\4"
+#define PANIC "\5"
 
-#define printf_wrapper(PUTC, ...)                                  \
-	({                                                         \
-		irql_t _printf_old_irql =                          \
-			spinlock_acquire(&g_pac_lock, HIGH_LEVEL); \
-		npf_pprintf(PUTC, NULL, __VA_ARGS__);              \
-		spinlock_release(&g_pac_lock, _printf_old_irql);   \
-	})
+extern spinlock_t printk_lock;
+#define printk(...)                                                  \
+	do {                                                              \
+		irql_t irql = spinlock_acquire(&printk_lock, HIGH_LEVEL); \
+		printk_locked(__VA_ARGS__);                         \
+		spinlock_release(&printk_lock, irql);                     \
+	} while (0)
 
-#define pac_printf(...) printf_wrapper(pac_putc, __VA_ARGS__)
+void printk_locked(const char *fmt, ...);
+void _printk_consoles_write(const char* buf, size_t size);
 
-[[gnu::noreturn]] void panic(const char *msg);
-
-#define LOG_DEBUG "[ \x1b[35mDBG  \x1b[0m] "
-#define LOG_INFO "[ \x1b[32mINFO \x1b[0m] "
-#define LOG_WARN "[ \x1b[33mWARN \x1b[0m] "
-#define LOG_ERR "[ \x1b[31mERR  \x1b[0m] "
+[[gnu::noreturn]] void panic();

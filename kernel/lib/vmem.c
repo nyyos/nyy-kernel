@@ -15,7 +15,7 @@
 #include <ndk/ndk.h>
 #include <ndk/vm.h>
 
-#define vmem_printf pac_printf
+#define vmem_printf printk
 #define ASSERT assert
 
 static spinlock_t g_vmem_lock;

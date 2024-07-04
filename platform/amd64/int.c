@@ -72,57 +72,56 @@ void cpu_idt_load()
 void handle_pf(cpu_state_t *frame)
 {
 	int error_code = frame->code;
-	pac_printf(LOG_DEBUG "Page Fault Error Code: 0x%x\n", error_code);
-	pac_printf("Information: ");
+	printk(DEBUG "Page Fault Error Code: 0x%x\n", error_code);
+	printk("Information: ");
 
 	if (error_code & 0x1) {
-		pac_printf("Present ");
+		printk("Present ");
 	} else {
-		pac_printf("Unpresent ");
+		printk("Unpresent ");
 	}
 
 	if (error_code & 0x2) {
-		pac_printf("Write ");
+		printk("Write ");
 	} else {
-		pac_printf("Read ");
+		printk("Read ");
 	}
 
 	if (error_code & 0x4) {
-		pac_printf("User ");
+		printk("User ");
 	} else {
-		pac_printf("Kernel ");
+		printk("Kernel ");
 	}
 
 	if (error_code & 0x8) {
-		pac_printf("ReservedWrite ");
+		printk("ReservedWrite ");
 	}
 
 	if (error_code & 0x10) {
-		pac_printf("Instructionfetch ");
+		printk("Instructionfetch ");
 	}
 
 	if (error_code & 0x20) {
-		pac_printf("Protectionkey ");
+		printk("Protectionkey ");
 	}
 
 	if (error_code & 0x40) {
-		pac_printf("Shadowstack ");
+		printk("Shadowstack ");
 	}
 
 	if (error_code & 0x80) {
-		pac_printf("SGX-Violation ");
+		printk("SGX-Violation ");
 	}
 
-	pac_printf("\n");
+	printk("\n");
 }
 
 void handle_fault(cpu_state_t *frame, int number)
 {
-	spinlock_release(&g_pac_lock, PASSIVE_LEVEL);
-	pac_printf("== FAULT ==\n");
-	pac_printf("cpu state:\n");
+	printk(PANIC "== FAULT ==\n");
+	printk(PANIC "cpu state:\n");
 	DUMP_STATE(frame);
-	pac_printf("\n");
+	printk(PANIC "\n");
 	if (number == 14) {
 		handle_pf(frame);
 	}
@@ -131,7 +130,7 @@ void handle_fault(cpu_state_t *frame, int number)
 
 void handle_irq(cpu_state_t *frame, int number)
 {
-	pac_printf("got irq\n");
+	printk("got irq\n");
 }
 
 irql_t irql_current()

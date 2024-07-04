@@ -56,8 +56,8 @@ int main()
 	cpudata_setup(&g_cpudatas[0]);
 	cpudata()->bsp = true;
 
-	pac_printf("Nyy/linux (" __DATE__ " " __TIME__ ")\n");
-	pac_printf("system pagesize: 0x%lx\n", PAGE_SIZE);
+	printk("Nyy/linux (" __DATE__ " " __TIME__ ")\n");
+	printk("system pagesize: 0x%lx\n", PAGE_SIZE);
 
 	int mfd = memfd_create("physical memory", 0);
 	ftruncate(mfd, PAGE_SIZE * PMEM_PAGECNT);

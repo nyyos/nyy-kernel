@@ -25,7 +25,7 @@ static void *allocwired(Vmem *vmem, size_t size, int vmflag)
 			    kVmAll);
 	}
 
-	pac_printf(LOG_DEBUG "allocate wired memory\n");
+	printk(DEBUG "allocate wired memory\n");
 
 	return p;
 }
@@ -41,8 +41,10 @@ static void freewired(Vmem *vmem, void *ptr, size_t size)
 		pm_free(page);
 	}
 	vmem_free(vmem, ptr, size);
-	pac_printf(LOG_DEBUG "free wired memory\n");
+	printk(DEBUG "free wired memory\n");
 }
+
+extern void pac_putc(int c, void *ctx);
 
 void kmem_init()
 {
@@ -51,9 +53,9 @@ void kmem_init()
 		  MEM_KERNEL_SIZE, PAGE_SIZE, nullptr, nullptr, nullptr, 0, 0);
 	vmem_init(&vmem_wired, "kernel-wired", nullptr, 0, PAGE_SIZE,
 		  &allocwired, &freewired, &vmem_va, 0, 0);
-	pac_printf(LOG_INFO "created kernel VA arena (%p-%p)\n",
-		   (void *)MEM_KERNEL_START,
-		   (void *)(MEM_KERNEL_START + MEM_KERNEL_SIZE));
+	printk(INFO "created kernel VA arena (%p-%p)\n",
+	       (void *)MEM_KERNEL_START,
+	       (void *)(MEM_KERNEL_START + MEM_KERNEL_SIZE));
 
 	g_bump_pos = 0;
 	g_bumparena = vmem_alloc(&vmem_wired, BUMP_ARENA_SIZE, VM_BESTFIT);
