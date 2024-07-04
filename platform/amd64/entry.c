@@ -272,7 +272,6 @@ void _start(void)
 	kmem_init();
 	vmstat_dump();
 	start_cores();
-	assert(false);
 	panic("reached kernel end");
 	hcf();
 }
