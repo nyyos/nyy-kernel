@@ -51,7 +51,8 @@ void _printk_consoles_write(const char *buf, size_t size)
 #define LOG_PANIC "[ \x1b[31mPANIC \x1b[0m] "
 void printk_locked(const char *msg, ...)
 {
-	char buf[PRINTK_BUF];
+	char buf[PRINTK_BUF + 1];
+	buf[PRINTK_BUF] = '\0';
 	size_t size;
 	int lvl = *msg;
 

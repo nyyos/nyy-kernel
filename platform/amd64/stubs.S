@@ -179,6 +179,7 @@ FAULT_STUB .L_typeFaultNoCode, 19
 
 .data
 .global itable
+.align 8
 itable:
 DEC_INT 0
 DEC_INT 1

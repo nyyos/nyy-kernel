@@ -1,3 +1,4 @@
+#include "ndk/addr.h"
 #include <limine.h>
 #include <nanoprintf.h>
 #include <assert.h>
@@ -8,6 +9,7 @@
 #include <nyyconf.h>
 #include <ndk/vm.h>
 #include <ndk/cpudata.h>
+#include <ndk/internal/symbol.h>
 #include <ndk/port.h>
 #include <ndk/kmem.h>
 #include <lib/vmem.h>
@@ -61,6 +63,11 @@ LIMINE_REQ static volatile struct limine_framebuffer_request fb_request = {
 	.revision = 0
 };
 
+LIMINE_REQ static volatile struct limine_module_request module_request = {
+	.id = LIMINE_MODULE_REQUEST,
+	.revision = 0
+};
+
 static cpudata_t bsp_data;
 
 static void serial_init()
@@ -73,6 +80,8 @@ static void serial_init()
 	outb(COM1 + 2, 0xC7); // Enable FIFO, clear them, with 14-byte threshold
 	outb(COM1 + 4, 0x0B); // IRQs enabled, RTS/DSR set
 }
+
+extern char addr_kernel_base[];
 
 extern char addr_data_end[];
 extern char addr_data_start[];
@@ -90,6 +99,9 @@ static void remap_kernel()
 {
 	paddr_t paddr = PADDR(address_request.response->physical_base);
 	vaddr_t vaddr = VADDR(address_request.response->virtual_base);
+
+	size_t offset = vaddr.addr - 0xffffffff80000000;
+	symbols_init(offset);
 
 	vm_map_t *kmap = vm_kmap();
 	vm_port_init_map(kmap);
@@ -293,6 +305,71 @@ static void fb_init()
 	}
 }
 
+static int hex2int(char c)
+{
+	if (c >= '0' && c <= '9') {
+		return c - '0';
+	} else if (c >= 'a' && c <= 'f') {
+		return c - 'a' + 10;
+	}
+	return 0;
+}
+
+static uintptr_t strtoaddr(const char *str, size_t len)
+{
+	uintptr_t addr = 0;
+	for (size_t i = len, j = 0; j < len; j++, i--) {
+		int val = hex2int(str[i - 1]);
+		addr += val * (1UL << 4 * j);
+	}
+	return addr;
+}
+
+static void parse_symbols(struct limine_file *file)
+{
+	char *buf = file->address;
+	char *line_start = buf;
+	size_t type_start = -1;
+	size_t name_start = -1;
+	for (size_t line_pos = 0, pos = 0; pos < file->size; pos++) {
+		if (buf[pos] == '\n') {
+			size_t name_len = line_pos - name_start;
+			char *name = kmalloc(name_len + 1);
+			name[name_len] = '\0';
+			strncpy(name, line_start + name_start, name_len);
+			size_t addr_len = type_start - 1;
+			char *addr_str = kmalloc(addr_len + 1);
+			addr_str[addr_len] = '\0';
+			strncpy(addr_str, line_start, addr_len);
+			uintptr_t addr = strtoaddr(addr_str, addr_len);
+			symbols_insert(name, addr);
+			line_start = &buf[pos + 1];
+			line_pos = 0;
+			type_start = -1;
+			name_start = -1;
+			continue;
+		} else if (line_start[line_pos] == ' ') {
+			if (type_start == -1)
+				type_start = line_pos + 1;
+			else
+				name_start = line_pos + 1;
+		}
+		line_pos++;
+	}
+}
+
+static void consume_modules()
+{
+	struct limine_module_response *res = module_request.response;
+	for (size_t i = 0; i < res->module_count; i++) {
+		struct limine_file *module = res->modules[i];
+		if (strcmp("symbols", module->cmdline) == 0) {
+			printk(DEBUG "got symbol map\n");
+			parse_symbols(module);
+		}
+	}
+}
+
 void _start(void)
 {
 	REAL_HHDM_START = PADDR(hhdm_request.response->offset);
@@ -322,6 +399,7 @@ void _start(void)
 	kmem_init();
 	vmstat_dump();
 	fb_init();
+	consume_modules();
 	start_cores();
 	printk(PANIC "Reached Kernel End\n");
 }

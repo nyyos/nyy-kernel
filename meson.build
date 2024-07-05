@@ -36,8 +36,8 @@ freestanding_c_args = [
   '-ffreestanding',
   '-fno-stack-protector',
   '-fno-stack-check',
-  '-fno-pie',
-  '-fno-pic',
+  '-fPIE',
+  '-fPIC',
   warnings,
 ]
 

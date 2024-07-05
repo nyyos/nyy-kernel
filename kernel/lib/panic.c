@@ -1,6 +1,8 @@
 #include <ndk/ndk.h>
 #include <ndk/port.h>
+#include <ndk/internal/symbol.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <string.h>
 
 static const char *panic_art =
@@ -32,8 +34,15 @@ static const char *panic_art =
 		rip = rbp + 1;
 		if (*rip == 0)
 			break;
-		printk_locked(" 0x%lx - %s\n", *rip,
-			      "TODO: SYMBOL LOOKUP");
+
+		symbol_t *sym = symbols_lookup(*rip);
+		if (sym) {
+			printk_locked(" 0x%lx - %s+0x%lx\n", *rip, sym->symname,
+				      *rip - sym->base - symbols_offset());
+		} else {
+			printk_locked(" 0x%lx\n", *rip);
+		}
+
 		rbp = (uint64_t *)*rbp;
 	}
 

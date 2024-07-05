@@ -1,4 +1,4 @@
-kernel_sources += files('log.c', 'std.c', 'vmem.c','string.c', 'panic.c')
+kernel_sources += files('log.c', 'std.c', 'vmem.c','string.c', 'panic.c', 'symbols.c')
 
 if conf.get('CONFIG_UBSAN', 'n') == 'y'
   kernel_sources += files('tinyubsan.c')
