@@ -305,59 +305,6 @@ static void fb_init()
 	}
 }
 
-static int hex2int(char c)
-{
-	if (c >= '0' && c <= '9') {
-		return c - '0';
-	} else if (c >= 'a' && c <= 'f') {
-		return c - 'a' + 10;
-	}
-	return 0;
-}
-
-static uintptr_t strtoaddr(const char *str, size_t len)
-{
-	uintptr_t addr = 0;
-	for (size_t i = len, j = 0; j < len; j++, i--) {
-		int val = hex2int(str[i - 1]);
-		addr += val * (1UL << 4 * j);
-	}
-	return addr;
-}
-
-static void parse_symbols(struct limine_file *file)
-{
-	char *buf = file->address;
-	char *line_start = buf;
-	size_t type_start = -1;
-	size_t name_start = -1;
-	for (size_t line_pos = 0, pos = 0; pos < file->size; pos++) {
-		if (buf[pos] == '\n') {
-			size_t name_len = line_pos - name_start;
-			char *name = kmalloc(name_len + 1);
-			name[name_len] = '\0';
-			strncpy(name, line_start + name_start, name_len);
-			size_t addr_len = type_start - 1;
-			char *addr_str = kmalloc(addr_len + 1);
-			addr_str[addr_len] = '\0';
-			strncpy(addr_str, line_start, addr_len);
-			uintptr_t addr = strtoaddr(addr_str, addr_len);
-			symbols_insert(name, addr);
-			line_start = &buf[pos + 1];
-			line_pos = 0;
-			type_start = -1;
-			name_start = -1;
-			continue;
-		} else if (line_start[line_pos] == ' ') {
-			if (type_start == -1)
-				type_start = line_pos + 1;
-			else
-				name_start = line_pos + 1;
-		}
-		line_pos++;
-	}
-}
-
 static void consume_modules()
 {
 	struct limine_module_response *res = module_request.response;
@@ -365,7 +312,7 @@ static void consume_modules()
 		struct limine_file *module = res->modules[i];
 		if (strcmp("symbols", module->cmdline) == 0) {
 			printk(DEBUG "got symbol map\n");
-			parse_symbols(module);
+			symbols_parse_map(module->address, module->size);
 		}
 	}
 }
