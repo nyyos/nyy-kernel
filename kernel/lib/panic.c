@@ -35,7 +35,7 @@ static const char *panic_art =
 		if (*rip == 0)
 			break;
 
-		symbol_t *sym = symbols_lookup(*rip);
+		symbol_t *sym = symbols_lookup_address(*rip);
 		if (sym) {
 			printk_locked(" 0x%lx - %s+0x%lx\n", *rip, sym->symname,
 				      *rip - sym->base - symbols_offset());

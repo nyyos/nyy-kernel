@@ -28,7 +28,7 @@ void symbols_insert(const char *name, uintptr_t address)
 	TAILQ_INSERT_TAIL(&symbol_list, symbol, entry);
 }
 
-symbol_t *symbols_lookup(uintptr_t address)
+symbol_t *symbols_lookup_address(uintptr_t address)
 {
 	address -= symbol_offset;
 	symbol_t *symbol = NULL;
@@ -41,6 +41,18 @@ symbol_t *symbols_lookup(uintptr_t address)
 			break;
 	}
 	return best_match;
+}
+
+symbol_t *symbols_lookup_name(const char *name)
+{
+	symbol_t *symbol = NULL;
+	TAILQ_FOREACH(symbol, &symbol_list, entry)
+	{
+		if (strcmp(name, symbol->symname) == 0) {
+			return symbol;
+		}
+	}
+	return NULL;
 }
 
 static int hex2int(char c)
