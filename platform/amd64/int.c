@@ -34,6 +34,8 @@ void idt_make_entry(idt_entry_t *entry, uint64_t isr)
 	entry->attributes = 0x8E;
 }
 
+void idt_set_ist(idt_entry_t *entry, uint8_t ist);
+
 #else
 // 32 bit idt
 typedef struct [[gnu::packed]] idt_entry {
@@ -60,6 +62,14 @@ void cpu_idt_init()
 		idt_entry_t *entry = &g_idt[i];
 		idt_make_entry(entry, itable[i]);
 	}
+
+	// nmi
+	idt_set_ist(&g_idt[2], 1);
+	// debug / breakpoint
+	idt_set_ist(&g_idt[1], 2);
+	idt_set_ist(&g_idt[3], 2);
+	// double fault
+	idt_set_ist(&g_idt[8], 3);
 }
 
 void cpu_idt_load()

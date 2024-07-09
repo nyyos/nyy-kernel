@@ -8,9 +8,9 @@ typedef struct [[gnu::packed]] tss {
 	uint64_t rsp1;
 	uint64_t rsp2;
 	uint64_t unused1;
-	uint64_t ist1;
-	uint64_t ist2;
-	uint64_t ist3;
+	uint64_t ist1; // nmi
+	uint64_t ist2; // debug/breakpoint
+	uint64_t ist3; // double fault
 	uint64_t ist4;
 	uint64_t ist5;
 	uint64_t ist6;
