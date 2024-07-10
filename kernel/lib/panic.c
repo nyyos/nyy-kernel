@@ -26,7 +26,7 @@ static const char *panic_art =
 [[gnu::noreturn]] void panic()
 {
 	_printk_consoles_write(panic_art, strlen(panic_art));
-	printk_locked("Stacktrace:\n");
+	printk("Stacktrace:\n");
 
 	uint64_t *rbp, *rip;
 	asm volatile("mov %%rbp, %0" : "=r"(rbp));
@@ -37,16 +37,16 @@ static const char *panic_art =
 
 		symbol_t *sym = symbols_lookup_address(*rip);
 		if (sym) {
-			printk_locked(" 0x%lx - %s+0x%lx\n", *rip, sym->symname,
-				      *rip - sym->base - symbols_offset());
+			printk(" 0x%lx - %s+0x%lx\n", *rip, sym->symname,
+			       *rip - sym->base - symbols_offset());
 		} else {
-			printk_locked(" 0x%lx\n", *rip);
+			printk(" 0x%lx\n", *rip);
 		}
 
 		rbp = (uint64_t *)*rbp;
 	}
 
-	printk_locked("\n");
+	printk("\n");
 
 	hcf();
 }

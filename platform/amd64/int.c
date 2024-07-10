@@ -34,7 +34,9 @@ void idt_make_entry(idt_entry_t *entry, uint64_t isr)
 	entry->attributes = 0x8E;
 }
 
-void idt_set_ist(idt_entry_t *entry, uint8_t ist);
+void idt_set_ist(idt_entry_t *entry, uint8_t ist) {
+	entry->ist = ist;
+}
 
 #else
 // 32 bit idt

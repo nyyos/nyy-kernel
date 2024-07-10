@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ndk/ndk.h>
 #include <stddef.h>
 #include <sys/queue.h>
 
@@ -8,6 +9,7 @@ typedef struct console {
 	void (*write)(struct console *, const char *msg, size_t sz);
 	unsigned int flags;
 
+	spinlock_t spinlock;
 	TAILQ_ENTRY(console) queue_entry;
 } console_t;
 

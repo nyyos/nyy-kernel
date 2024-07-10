@@ -321,6 +321,7 @@ void _start(void)
 {
 	REAL_HHDM_START = PADDR(hhdm_request.response->offset);
 
+	_printk_init();
 	serial_init();
 	console_add(&serial_console);
 

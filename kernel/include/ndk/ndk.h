@@ -23,15 +23,9 @@ void spinlock_release(spinlock_t *spinlock, irql_t before);
 #define DEBUG "\4"
 #define PANIC "\5"
 
-extern spinlock_t printk_lock;
-#define printk(...)                                                  \
-	do {                                                              \
-		irql_t irql = spinlock_acquire(&printk_lock, HIGH_LEVEL); \
-		printk_locked(__VA_ARGS__);                         \
-		spinlock_release(&printk_lock, irql);                     \
-	} while (0)
-
+void printk(const char *fmt, ...);
 void printk_locked(const char *fmt, ...);
-void _printk_consoles_write(const char* buf, size_t size);
+void _printk_consoles_write(const char *buf, size_t size);
+void _printk_init();
 
 [[gnu::noreturn]] void panic();
