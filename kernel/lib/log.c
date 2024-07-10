@@ -54,34 +54,44 @@ void logbuffer_init(logbuffer_t *lb)
 
 void logbuffer_write(logbuffer_t *lb, const char *str, size_t size)
 {
-	uint32_t head = atomic_load(&lb->head);
-	uint32_t next = (head + 1) & (MSGS_SIZE - 1);
-	uint32_t seq = atomic_fetch_add(&lb->seq, 1);
+	uint32_t head, next_head, tail;
 
-	// XXX: do something on log buffer full?
-	if (next == atomic_load(&lb->tail))
-		return;
+	do {
+		head = atomic_load_explicit(&lb->head, memory_order_relaxed);
+		next_head = (head + 1) & (MSGS_SIZE - 1);
+		tail = atomic_load_explicit(&lb->tail, memory_order_acquire);
+
+		if (next_head == tail)
+			return;
+
+	} while (!atomic_compare_exchange_weak_explicit(
+		&lb->head, &head, next_head, memory_order_release,
+		memory_order_relaxed));
 
 	logmessage_t *msg = &lb->messages[head];
 	// XXX: size check
 	memcpy(msg->buf, str, size);
 	msg->buf[size] = '\0';
 	msg->msg_sz = size;
-	msg->seq = seq;
-	atomic_store(&lb->head, next);
 }
 
 logmessage_t *logbuffer_read(logbuffer_t *lb)
 {
-	uint32_t tail = atomic_load(&lb->tail);
+	uint32_t tail, head, next_tail;
 
-	if (atomic_load(&lb->head) == tail) {
-		return NULL;
-	}
+	do {
+		tail = atomic_load_explicit(&lb->tail, memory_order_relaxed);
+		head = atomic_load_explicit(&lb->head, memory_order_acquire);
 
-	logmessage_t *res = &lb->messages[tail];
-	atomic_store(&lb->tail, (tail + 1) & (MSGS_SIZE - 1));
-	return res;
+		if (tail == head)
+			return NULL;
+
+		next_tail = (tail + 1) & (MSGS_SIZE - 1);
+	} while (!atomic_compare_exchange_weak_explicit(
+		&lb->tail, &tail, next_tail, memory_order_release,
+		memory_order_relaxed));
+
+	return &lb->messages[tail];
 }
 
 static logbuffer_t g_lb;
