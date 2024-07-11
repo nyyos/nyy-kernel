@@ -1,3 +1,4 @@
+#include "lib/vmem.h"
 #include <ndk/vm.h>
 #include <ndk/ndk.h>
 #include <ndk/kmem.h>
@@ -20,4 +21,9 @@ vm_map_t *vm_map_create()
 void vm_map_destroy(vm_map_t *map)
 {
 	assert(!"todo");
+}
+
+void *vm_map_allocate(vm_map_t *map, size_t length)
+{
+	return vmem_alloc(map->arena, length, VM_INSTANTFIT);
 }

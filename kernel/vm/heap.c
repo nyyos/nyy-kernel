@@ -51,6 +51,7 @@ void kmem_init()
 	vmem_bootstrap();
 	vmem_init(&vmem_va, "kernel-va", (void *)MEM_KERNEL_START,
 		  MEM_KERNEL_SIZE, PAGE_SIZE, nullptr, nullptr, nullptr, 0, 0);
+	vm_kmap()->arena = &vmem_va;
 	vmem_init(&vmem_wired, "kernel-wired", nullptr, 0, PAGE_SIZE,
 		  &allocwired, &freewired, &vmem_va, 0, 0);
 	printk(INFO "created kernel VA arena (%p-%p)\n",

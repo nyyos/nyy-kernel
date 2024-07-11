@@ -1,5 +1,6 @@
 #pragma once
 
+#include "lib/vmem.h"
 #include <ndk/port.h>
 #include <ndk/util.h>
 #include <ndk/addr.h>
@@ -60,6 +61,7 @@ typedef struct page {
 } page_t;
 
 typedef struct vm_map {
+	Vmem* arena;
 	vm_port_map_t portstate;
 } vm_map_t;
 
@@ -86,9 +88,9 @@ void pm_free(page_t *page);
 page_t *pm_lookup(paddr_t paddr);
 
 /*
- * ==============================
- * |   Virtual Memory Manager   |
- * ==============================
+ * ========================================
+ * |   Virtual Addressspace Management    |
+ * ========================================
  */
 
 void vmstat_dump();
@@ -97,6 +99,8 @@ vm_map_t *vm_map_create();
 void vm_map_destroy(vm_map_t *map);
 vm_map_t *vm_kmap();
 void vm_setup_kmap();
+
+void* vm_map_allocate(vm_map_t* map, size_t length);
 
 void vm_port_init_map(vm_map_t *map);
 
