@@ -13,6 +13,9 @@ autoconf_header = custom_target('gen-autoconf',
 autoconf_dep = declare_dependency(sources: autoconf_header)
 
 flanterm = subproject('flanterm')
+uacpi = subproject('uacpi')
+uacpi_sources = uacpi.get_variable('sources')
+uacpi_includes = uacpi.get_variable('includes')
 kernel_deps = [autoconf_dep, flanterm.get_variable('flanterm_dep')]
 
 config_h = configure_file(
