@@ -10,6 +10,10 @@ config UBSAN
   bool "Enable UBSAN"
   default n
 
+config STACKGUARD
+  bool "Enable stack protector"
+  default y
+
 config PM_CHECK
   bool "Enable PM checks on free" 
   default n

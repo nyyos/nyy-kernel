@@ -30,7 +30,8 @@ void cpudata_setup(cpudata_t *cpudata)
 void __assert_fail(const char *assertion, const char *file, unsigned int line,
 		   const char *function)
 {
-	printk(PANIC
+	printk(ERR
 	       "Assertion failure at %s:%d in function %s\nAssertion: %s\n",
 	       file, line, function, assertion);
+	panic("Assertion failure\n");
 }

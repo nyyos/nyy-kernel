@@ -169,10 +169,6 @@ static void _printk_buffer_write(logbuffer_t *lb)
 	va_end(args);
 
 	_printk_buffer_write(&g_lb);
-
-	if (lvl == 5) {
-		panic();
-	}
 }
 
 void console_add(console_t *console)

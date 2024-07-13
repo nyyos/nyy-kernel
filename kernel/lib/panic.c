@@ -23,16 +23,17 @@ static const char *panic_art =
 	"                                                           \n"
 	"";
 
-[[gnu::noreturn]] void panic()
+[[gnu::noreturn]] void panic(const char* msg)
 {
 	_printk_consoles_write(panic_art, strlen(panic_art));
+	printk(PANIC "%s\n", msg);
 	printk("Stacktrace:\n");
 
 	uint64_t *rbp, *rip;
 	asm volatile("mov %%rbp, %0" : "=r"(rbp));
 	while (rbp) {
 		rip = rbp + 1;
-		if (*rip == 0)
+		if (!rip || *rip == 0)
 			break;
 
 		symbol_t *sym = symbols_lookup_address(*rip);
@@ -49,4 +50,5 @@ static const char *panic_art =
 	printk("\n");
 
 	hcf();
+	__builtin_trap();
 }

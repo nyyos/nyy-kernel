@@ -127,18 +127,20 @@ void handle_pf(cpu_state_t *frame)
 	}
 
 	printk("\n");
+	panic("page fault not handled\n");
 }
 
 void handle_fault(cpu_state_t *frame, int number)
 {
-	printk(PANIC "== FAULT ==\n");
-	printk(PANIC "cpu state:\n");
+	printk("== FAULT ==\n");
+	printk("cpu state:\n");
 	DUMP_STATE(frame);
-	printk(PANIC "\n");
+	printk("\n");
 	if (number == 14) {
 		handle_pf(frame);
+	} else {
+		panic("unhandleable exception\n");
 	}
-	hcf();
 }
 
 void handle_irq(cpu_state_t *frame, int number)

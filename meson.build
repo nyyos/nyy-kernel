@@ -34,12 +34,16 @@ freestanding_c_args = [
   '-fno-delete-null-pointer-checks',
   '-fno-omit-frame-pointer',
   '-ffreestanding',
-  '-fno-stack-protector',
-  '-fno-stack-check',
   '-fPIE',
   '-fPIC',
   warnings,
 ]
+
+if conf.get('CONFIG_STACKGUARD', 'n') == 'y'
+  freestanding_c_args += '-fstack-protector-strong'
+else
+  freestanding_c_args += ['-fno-stack-protector', '-fno-stack-check']
+endif
 
 if conf.get('CONFIG_UBSAN', 'n') == 'y'
   freestanding_c_args += '-fsanitize=undefined' 
