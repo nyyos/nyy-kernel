@@ -27,7 +27,7 @@ spinlock_t printk_lock = SPINLOCK_INITIALIZER();
 #define LOG_ERR "[ \x1b[31mERROR \x1b[0m] "
 #define LOG_PANIC "[ \x1b[31mPANIC \x1b[0m] "
 
-#define MSG_BUF_SIZE 256
+#define MSG_BUF_SIZE 512
 // has to align to ^2!
 #define MSGS_SIZE 1024
 
@@ -122,13 +122,13 @@ static void _printk_buffer_write(logbuffer_t *lb)
 	}
 }
 
-void printk(const char *fmt, ...)
+[[clang::no_sanitize("undefined")]] void printk(const char *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
 
 	size_t size;
-	char buf[MSG_BUF_SIZE + 1];
+	[[gnu::aligned(_Alignof(char))]] char buf[MSG_BUF_SIZE + 1];
 	buf[MSG_BUF_SIZE] = '\0';
 	int lvl = *fmt;
 

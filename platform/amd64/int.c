@@ -34,7 +34,8 @@ void idt_make_entry(idt_entry_t *entry, uint64_t isr)
 	entry->attributes = 0x8E;
 }
 
-void idt_set_ist(idt_entry_t *entry, uint8_t ist) {
+void idt_set_ist(idt_entry_t *entry, uint8_t ist)
+{
 	entry->ist = ist;
 }
 
@@ -142,7 +143,11 @@ void handle_fault(cpu_state_t *frame, int number)
 
 void handle_irq(cpu_state_t *frame, int number)
 {
-	printk("got irq\n");
+	if (number == 0xFF) {
+		printk("got spurious IRQ\n");
+		return;
+	}
+	printk("got irq %d\n", number);
 }
 
 irql_t irql_current()
