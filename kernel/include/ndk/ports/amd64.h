@@ -52,5 +52,8 @@ typedef struct [[gnu::packed]] cpu_state {
 	uint64_t ss;
 } cpu_state_t;
 
+void port_cpu_state_init(cpu_state_t *stp, bool kern);
+
 #define STATE_SP(state) (state)->rsp
 #define STATE_IP(state) (state)->rip
+#define STATE_ARG0(state) (state)->rdi
