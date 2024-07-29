@@ -1,16 +1,15 @@
 #pragma once
 
 #include <nanoprintf.h>
-#include <stdatomic.h>
 
 #include "ndk/irql.h"
 
 typedef struct spinlock {
-	atomic_flag flag;
+	volatile int flag;
 } spinlock_t;
 
 #define SPINLOCK_WAIT(spinlock) spinlock_acquire(spinlock, HIGH_LEVEL);
-#define SPINLOCK_INIT(spinlock) atomic_flag_clear(&(spinlock)->flag);
+#define SPINLOCK_INIT(spinlock) ((spinlock)->flag = 0);
 // clang-format off
 #define SPINLOCK_INITIALIZER() {0}
 // clang-format on

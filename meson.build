@@ -31,11 +31,14 @@ warnings = [
   '-Wno-comment', # added because of warning in nanoprintf ??
 ]
 
+target_is_freestanding = true
+
 freestanding_c_args = [
   '-fno-strict-aliasing',
   '-fwrapv',
   '-fno-delete-null-pointer-checks',
   '-fno-omit-frame-pointer',
+  '-nostdinc',
   '-ffreestanding',
   '-fPIE',
   '-fPIC',
@@ -96,6 +99,7 @@ elif (arch == 'riscv64')
     '-mcmodel=medany'
   ]
 elif (arch == 'linux')
+  target_is_freestanding = false
   freestanding_c_args = [
     warnings,
     '-DNYYLINUX'
@@ -105,6 +109,7 @@ else
   error('\n\tbad arch')
 endif
 
+kernel_sources = []
 freestanding_include_dirs = [ include_directories(
   'kernel/include',
   'kernel'
@@ -121,6 +126,9 @@ if(build_limine)
     native: true
   )
 endif
+
+
+subdir('freestanding')
 
 subdir('kernel')
 if (arch == 'amd64')

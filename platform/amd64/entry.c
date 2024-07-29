@@ -1,8 +1,6 @@
-#include "ndk/addr.h"
 #include <limine.h>
 #include <nanoprintf.h>
 #include <assert.h>
-#include <stdatomic.h>
 #include <stdint.h>
 
 #include <ndk/ndk.h>
@@ -201,7 +199,7 @@ static void cpu_common_init(cpudata_t *cpudata)
 }
 
 struct smp_info {
-	volatile atomic_bool ready;
+	bool ready;
 	cpudata_t data;
 };
 
@@ -219,7 +217,8 @@ static void smp_entry(struct limine_smp_info *info)
 	// XXX: make this the idle thread of the cpu
 	printk(INFO "entered kernel on core %d\n", info->lapic_id);
 
-	atomic_store(&nyy_info->ready, true);
+	bool ready = true;
+	__atomic_store(&nyy_info->ready, &ready, __ATOMIC_RELEASE);
 
 	hcf();
 }
@@ -242,8 +241,9 @@ static void start_cores()
 		if (cpu->lapic_id == 0)
 			continue;
 		struct smp_info *info = (struct smp_info *)cpu->extra_argument;
-		while (atomic_load(&info->ready) != true) {
-			asm volatile("pause");
+		while (__atomic_load_n(&info->ready, __ATOMIC_RELAXED) !=
+		       true) {
+			port_spin_hint();
 		}
 	}
 	printk(INFO "all cores up\n");
@@ -349,5 +349,5 @@ void _start(void)
 	fb_init();
 	consume_modules();
 	start_cores();
-	printk(PANIC "Reached Kernel End\n");
+	panic("Reached kernel end");
 }

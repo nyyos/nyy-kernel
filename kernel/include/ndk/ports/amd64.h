@@ -54,3 +54,8 @@ typedef struct [[gnu::packed]] cpu_state {
 
 #define STATE_SP(state) (state)->rsp
 #define STATE_IP(state) (state)->rip
+
+static inline void port_spin_hint()
+{
+	asm volatile("pause");
+}

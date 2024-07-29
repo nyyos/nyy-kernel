@@ -4,13 +4,12 @@
 #include <ndk/ndk.h>
 #include <ndk/port.h>
 #include <ndk/vm.h>
-#include <stdatomic.h>
 
 static Vmem vmem_va;
 static Vmem vmem_wired;
 #define BUMP_ARENA_SIZE PAGE_SIZE * 5000
 static char *g_bumparena;
-static atomic_size_t g_bump_pos;
+static volatile size_t g_bump_pos;
 
 static void *allocwired(Vmem *vmem, size_t size, int vmflag)
 {
@@ -69,13 +68,15 @@ void *kmalloc(size_t size)
 	size_t newpos;
 
 	do {
-		oldpos = atomic_load(&g_bump_pos);
+		oldpos = __atomic_load_n(&g_bump_pos, __ATOMIC_ACQUIRE);
 		newpos = oldpos + size;
 		if (newpos > BUMP_ARENA_SIZE) {
 			assert(!"go implement a slab alloc");
 			return NULL;
 		}
-	} while (!atomic_compare_exchange_weak(&g_bump_pos, &oldpos, newpos));
+	} while (!__atomic_compare_exchange_n(&g_bump_pos, &oldpos, newpos, 1,
+					      __ATOMIC_RELEASE,
+					      __ATOMIC_RELAXED));
 
 	return &g_bumparena[oldpos];
 }

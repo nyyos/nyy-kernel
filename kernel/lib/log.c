@@ -11,7 +11,6 @@
 #include <dkit/console.h>
 #include <sys/queue.h>
 #include <stdarg.h>
-#include <stdatomic.h>
 #include <string.h>
 
 // XXX: maybe move this out from here...
@@ -39,9 +38,9 @@ typedef struct log_message {
 
 typedef struct log_buffer {
 	logmessage_t messages[MSGS_SIZE];
-	volatile atomic_uint head;
-	volatile atomic_uint tail;
-	volatile atomic_uint seq;
+	volatile unsigned int head;
+	volatile unsigned int tail;
+	volatile unsigned int seq;
 } logbuffer_t;
 
 void logbuffer_init(logbuffer_t *lb)
@@ -57,16 +56,16 @@ void logbuffer_write(logbuffer_t *lb, const char *str, size_t size)
 	uint32_t head, next_head, tail;
 
 	do {
-		head = atomic_load_explicit(&lb->head, memory_order_relaxed);
+		head = __atomic_load_n(&lb->head, __ATOMIC_RELAXED);
 		next_head = (head + 1) & (MSGS_SIZE - 1);
-		tail = atomic_load_explicit(&lb->tail, memory_order_acquire);
+		tail = __atomic_load_n(&lb->tail, __ATOMIC_ACQUIRE);
 
 		if (next_head == tail)
 			return;
 
-	} while (!atomic_compare_exchange_weak_explicit(
-		&lb->head, &head, next_head, memory_order_release,
-		memory_order_relaxed));
+	} while (!__atomic_compare_exchange_n(&lb->head, &head, next_head, 1,
+					      __ATOMIC_RELEASE,
+					      __ATOMIC_RELAXED));
 
 	logmessage_t *msg = &lb->messages[head];
 	// XXX: size check
@@ -80,16 +79,16 @@ logmessage_t *logbuffer_read(logbuffer_t *lb)
 	uint32_t tail, head, next_tail;
 
 	do {
-		tail = atomic_load_explicit(&lb->tail, memory_order_relaxed);
-		head = atomic_load_explicit(&lb->head, memory_order_acquire);
+		tail = __atomic_load_n(&lb->tail, __ATOMIC_RELAXED);
+		head = __atomic_load_n(&lb->head, __ATOMIC_ACQUIRE);
 
 		if (tail == head)
 			return NULL;
 
 		next_tail = (tail + 1) & (MSGS_SIZE - 1);
-	} while (!atomic_compare_exchange_weak_explicit(
-		&lb->tail, &tail, next_tail, memory_order_release,
-		memory_order_relaxed));
+	} while (!__atomic_compare_exchange_n(&lb->tail, &tail, next_tail, 1,
+					      __ATOMIC_RELEASE,
+					      __ATOMIC_RELAXED));
 
 	return &lb->messages[tail];
 }
