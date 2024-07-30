@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include <string.h>
 
-void *memset(void *p, int c, size_t n)
+[[gnu::weak]] void *memset(void *p, int c, size_t n)
 {
 	char *str = (char *)p;
 	for (size_t i = 0; i < n; i++) {
