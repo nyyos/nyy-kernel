@@ -6,14 +6,14 @@
  * More implementation details are available in "vmem.h"
  */
 
-#include "ndk/irql.h"
 #include <string.h>
-#include <sys/queue.h>
-#include <lib/vmem.h>
-
 #include <assert.h>
+#include <sys/queue.h>
+
+#include <lib/vmem.h>
 #include <ndk/ndk.h>
 #include <ndk/vm.h>
+#include <ndk/irql.h>
 
 #define vmem_printf printk
 #define ASSERT assert
@@ -48,7 +48,7 @@ void *vmem_alloc_pages(size_t n)
  */
 #define GET_LIST(size) (FREELISTS_N - __builtin_clzl(size) - 1)
 
-#define VMEM_ALIGNUP(addr, align) (((addr) + (align)-1) & ~((align)-1))
+#define VMEM_ALIGNUP(addr, align) (((addr) + (align) - 1) & ~((align) - 1))
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
@@ -260,6 +260,7 @@ int vmem_init(Vmem *ret, char *name, void *base, size_t size, size_t quantum,
 	ret->source = source;
 	ret->qcache_max = qcache_max;
 	ret->vmflag = vmflag;
+	SPINLOCK_INIT(&ret->lock);
 	ret->stat.free = size;
 	ret->stat.total += size;
 	ret->stat.in_use = 0;
@@ -310,6 +311,7 @@ void *vmem_add(Vmem *vmp, void *addr, size_t size, int vmflag)
 void *vmem_xalloc(Vmem *vmp, size_t size, size_t align, size_t phase,
 		  size_t nocross, void *minaddr, void *maxaddr, int vmflag)
 {
+	irql_t irql = spinlock_acquire(&vmp->lock, HIGH_LEVEL);
 	VmemSegList *first_list = freelist_for_size(vmp, size),
 		    *end = &vmp->freelist[FREELISTS_N], *list = NULL;
 	VmemSegment *new_seg = NULL, *new_seg2 = NULL, *seg = NULL;
@@ -324,6 +326,7 @@ void *vmem_xalloc(Vmem *vmp, size_t size, size_t align, size_t phase,
 	if (align == 0) {
 		align = vmp->quantum;
 	}
+	assert((align % vmp->quantum) == 0);
 
 	if (!(vmflag & VM_BOOTSTRAP))
 		ASSERT(repopulate_segments() == 0);
@@ -466,6 +469,7 @@ found:
 
 	ret = (void *)new_seg->base;
 
+	spinlock_release(&vmp->lock, irql);
 	return ret;
 }
 
@@ -477,6 +481,7 @@ void *vmem_alloc(Vmem *vmp, size_t size, int vmflag)
 
 void vmem_xfree(Vmem *vmp, void *addr, size_t size)
 {
+	irql_t irql = spinlock_acquire(&vmp->lock, HIGH_LEVEL);
 	VmemSegment *seg, *neighbor;
 	VmemSegList *list;
 
@@ -545,6 +550,7 @@ void vmem_xfree(Vmem *vmp, void *addr, size_t size)
 
 	vmp->stat.in_use -= size;
 	vmp->stat.free += size;
+	spinlock_release(&vmp->lock, irql);
 }
 
 void vmem_free(Vmem *vmp, void *addr, size_t size)

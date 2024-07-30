@@ -10,6 +10,8 @@
 #include <stdint.h>
 #include <sys/queue.h>
 
+#include <ndk/ndk.h>
+
 /* Directs vmem to use the smallest
 free segment that can satisfy the allocation. This
 policy tends to minimize fragmentation of very
@@ -92,6 +94,7 @@ typedef struct vmem {
 	struct vmem *source; /* Import arena */
 	size_t qcache_max; /* Maximum size to cache */
 	int vmflag; /* VM_SLEEP or VM_NOSLEEP */
+	spinlock_t lock;
 
 	VmemSegQueue segqueue;
 	VmemSegList freelist
