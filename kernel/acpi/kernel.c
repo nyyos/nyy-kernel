@@ -3,6 +3,7 @@
 #include <uacpi/kernel_api.h>
 
 #include <ndk/ndk.h>
+#include <ndk/kmem.h>
 
 #define STUB panic("UACPI kernel API stub");
 
@@ -80,17 +81,17 @@ void uacpi_kernel_unmap(void *addr, uacpi_size len)
 
 void *uacpi_kernel_alloc(uacpi_size size)
 {
-	STUB;
+	return kmalloc(size);
 }
 
 void *uacpi_kernel_calloc(uacpi_size count, uacpi_size size)
 {
-	STUB;
+	return kcalloc(count, size);
 }
 
 void uacpi_kernel_free(void *mem, uacpi_size size_hint)
 {
-	STUB;
+	kfree(mem, size_hint);
 }
 
 void uacpi_kernel_log(uacpi_log_level, const uacpi_char *)

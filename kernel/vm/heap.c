@@ -4,6 +4,7 @@
 #include <ndk/ndk.h>
 #include <ndk/port.h>
 #include <ndk/vm.h>
+#include <string.h>
 
 static Vmem vmem_va;
 static Vmem vmem_wired;
@@ -81,7 +82,16 @@ void *kmalloc(size_t size)
 	return &g_bumparena[oldpos];
 }
 
-void kfree(void *ptr)
+void *kcalloc(size_t count, size_t size)
+{
+	if (size == 0 || count == 0)
+		return kmalloc(0);
+	void *ptr = kmalloc(count * size);
+	memset(ptr, 0x0, count * size);
+	return ptr;
+}
+
+void kfree(void *ptr, size_t size)
 {
 	// nop
 }
