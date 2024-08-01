@@ -20,45 +20,39 @@ typedef struct region {
 	page_t pages[];
 } region_t;
 
-static TAILQ_HEAD(regionlist, region) regionlist;
-static TAILQ_HEAD(pagelist, page) pagelist;
-static spinlock_t page_lock;
+static TAILQ_HEAD(regionlist,
+		  region) regionlist = TAILQ_HEAD_INITIALIZER(regionlist);
+static TAILQ_HEAD(pagelist, page) pagelist = TAILQ_HEAD_INITIALIZER(pagelist);
 
-vmstat_t vmstat;
+vmstat_t vmstat = { 0, 0 };
 paddr_t REAL_HHDM_START;
-
-void pm_initialize()
-{
-	TAILQ_INIT(&regionlist);
-	TAILQ_INIT(&pagelist);
-	SPINLOCK_INIT(&page_lock);
-	memset(&vmstat, 0x0, sizeof(vmstat_t));
-}
 
 void pm_add_region(paddr_t base, size_t length)
 {
 	region_t *region;
 	size_t i, used;
 
+	used = PAGE_ALIGN_UP(sizeof(region_t) +
+			     buddy_sizeof_alignment(length, PAGE_SIZE) +
+			     sizeof(page_t) * length / PAGE_SIZE);
+	if ((length - used) < (PAGE_SIZE * 100)) {
+		return;
+	}
+
 	region = (region_t *)P2V(base).addr;
 	region->pagecnt = length / PAGE_SIZE;
 	region->base = base;
 	TAILQ_INSERT_TAIL(&regionlist, region, entry);
 
-	vmstat.total += region->pagecnt;
-	vmstat.used += region->pagecnt;
-
+#if 0
 	printk(DEBUG "pfn part: %ldB\n",
 	       sizeof(region_t) + sizeof(page_t) * length / PAGE_SIZE);
 	printk(DEBUG "buddy part: %ldB\n",
-	       buddy_sizeof_alignment(length, PAGE_SIZE));
+	  buddy_sizeof_alignment(length, PAGE_SIZE));
+#endif
 
-	used = PAGE_ALIGN_UP(sizeof(region_t) +
-			     buddy_sizeof_alignment(length, PAGE_SIZE) +
-			     sizeof(page_t) * length / PAGE_SIZE);
-	if ((length - used) < PAGE_SIZE) {
-		return;
-	}
+	printk("vmstat.total:%lu\n", vmstat.total);
+	vmstat.total += region->pagecnt;
 
 	for (i = 0; i < region->pagecnt; i++) {
 		region->pages[i].usage = kPageUseFree;
@@ -69,6 +63,7 @@ void pm_add_region(paddr_t base, size_t length)
 	for (i = 0; i < used / PAGE_SIZE; i++) {
 		region->pages[i].usage = kPageUseInternal;
 	}
+	vmstat.used += used / PAGE_SIZE;
 
 	void *metadata = &region->pages[region->pagecnt];
 	void *arena = (void *)(base.addr + used);
@@ -122,6 +117,7 @@ page_t *pm_allocate_n(size_t n, short usage)
 		return nullptr;
 	void *mem = buddy_malloc(region->buddy, n * PAGE_SIZE);
 	assert(mem != nullptr);
+	__atomic_fetch_add(&vmstat.used, n, __ATOMIC_RELAXED);
 	spinlock_release(&region->buddy_lock, irql);
 	return pm_lookup(PADDR(mem));
 }
@@ -171,11 +167,13 @@ void pm_free_n(page_t *pages, size_t n)
 	region_t *region = pm_lookup_region(PG2P(pages));
 	irql_t irql = spinlock_acquire(&region->buddy_lock, HIGH_LEVEL);
 	buddy_safe_free(region->buddy, (void *)PG2P(pages).addr, n * PAGE_SIZE);
+	__atomic_fetch_sub(&vmstat.used, n, __ATOMIC_RELAXED);
 	spinlock_release(&region->buddy_lock, irql);
 }
 
 void vmstat_dump()
 {
-	printk("** VMSTAT **\n total: %ld\n used: %ld\n free: %ld\n** VMSTAT END **\n",
-	       vmstat.total, vmstat.used, vmstat.total - vmstat.used);
+	size_t used = __atomic_load_n(&vmstat.used, __ATOMIC_ACQUIRE);
+	printk("** VMSTAT **\n total: %lu\n used: %lu\n free: %lu\n** VMSTAT END **\n",
+	       vmstat.total, used, vmstat.total - used);
 }

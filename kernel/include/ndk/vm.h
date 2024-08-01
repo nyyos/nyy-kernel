@@ -70,8 +70,6 @@ typedef struct vm_map {
  * ================================
  */
 
-// initialize basic PM structures
-void pm_initialize();
 // add a physical memory region into the pool
 void pm_add_region(paddr_t base, size_t length);
 // allocate/free functions

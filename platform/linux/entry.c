@@ -80,7 +80,6 @@ int main()
 		}
 	}
 
-	pm_initialize();
 	pm_add_region(PADDR(0), PMEM_PAGECNT * PAGE_SIZE);
 	vmstat_dump();
 

@@ -1,5 +1,6 @@
 #include <ndk/ndk.h>
 #include <ndk/port.h>
+#include "ndk/vm.h"
 #include <ndk/internal/symbol.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -23,11 +24,14 @@ static const char *panic_art =
 	"                                                           \n"
 	"";
 
-[[gnu::noreturn]] void panic(const char* msg)
+[[gnu::noreturn]] void panic(const char *msg)
 {
 	_printk_consoles_write(panic_art, strlen(panic_art));
 	printk(PANIC "%s\n", msg);
-	printk("Stacktrace:\n");
+
+	vmstat_dump();
+
+	printk("\nStacktrace:\n");
 
 	uint64_t *rbp, *rip;
 	asm volatile("mov %%rbp, %0" : "=r"(rbp));

@@ -286,12 +286,15 @@ void fb_write(console_t *console, const char *buf, size_t size)
 	flanterm_write(fbcons->ctx, buf, size);
 }
 
+static fb_console_t fb_console;
+
 static void fb_init()
 {
 	struct limine_framebuffer_response *res = fb_request.response;
 	for (size_t i = 0; i < res->framebuffer_count; i++) {
 		struct limine_framebuffer *fb = res->framebuffers[i];
-		fb_console_t *cons = kmalloc(sizeof(fb_console_t));
+		//fb_console_t *cons = kmalloc(sizeof(fb_console_t));
+		fb_console_t *cons = &fb_console;
 		memset(cons, 0x0, sizeof(fb_console_t));
 		cons->console.name = "limine-flanterm";
 		cons->console.write = fb_write;
@@ -302,6 +305,7 @@ static void fb_init()
 			fb->blue_mask_size, fb->blue_mask_shift, NULL, NULL,
 			NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 1, 0, 0, 0);
 		console_add((console_t *)cons);
+		return;
 	}
 }
 
@@ -324,6 +328,7 @@ void _start(void)
 	_printk_init();
 	serial_init();
 	console_add(&serial_console);
+	fb_init();
 
 	printk(INFO "Nyy/amd64 (Built on: " __DATE__ " " __TIME__ ")\n");
 
@@ -332,8 +337,6 @@ void _start(void)
 
 	cpu_common_init(&bsp_data);
 	cpudata()->bsp = true;
-
-	pm_initialize();
 
 	struct limine_memmap_entry **entries = memmap_request.response->entries;
 	for (size_t i = 0; i < memmap_request.response->entry_count; i++) {
@@ -346,7 +349,6 @@ void _start(void)
 	remap_kernel();
 	kmem_init();
 	vmstat_dump();
-	fb_init();
 	consume_modules();
 	start_cores();
 	panic("Reached kernel end");

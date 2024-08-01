@@ -59,8 +59,6 @@ void _start(void)
 
 	printk("Nyy/riscv64-virt (" __DATE__ " " __TIME__ ")\r\n");
 
-	pm_initialize();
-
 	struct limine_memmap_entry **entries = memmap_request.response->entries;
 	for (size_t i = 0; i < memmap_request.response->entry_count; i++) {
 		struct limine_memmap_entry *entry = entries[i];
