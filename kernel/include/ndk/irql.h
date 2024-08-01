@@ -8,7 +8,7 @@ typedef unsigned int irql_t;
 enum IRQL_LEVELS {
 	PASSIVE_LEVEL = 0,
 	APC_LEVEL = 1,
-	DISPATCH_LEVEL = 2,
+	DPC_LEVEL = 2,
 	CLOCK_LEVEL = 14,
 	HIGH_LEVEL = 15,
 };

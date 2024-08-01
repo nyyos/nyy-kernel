@@ -1,16 +1,21 @@
-#include <assert.h>
+#include "ndk/util.h"
 #include <ndk/ndk.h>
 #include <ndk/port.h>
 #include <ndk/vm.h>
 #include <string.h>
 #include <sys/queue.h>
+#include <assert.h>
 #include <nyyconf.h>
+#include <buddy_alloc.h>
 
 typedef struct region {
 	paddr_t base;
 	size_t pagecnt;
 
 	TAILQ_ENTRY(region) entry;
+
+	spinlock_t buddy_lock;
+	struct buddy *buddy;
 
 	page_t pages[];
 } region_t;
@@ -43,7 +48,13 @@ void pm_add_region(paddr_t base, size_t length)
 	vmstat.total += region->pagecnt;
 	vmstat.used += region->pagecnt;
 
+	printk(DEBUG "pfn part: %ldB\n",
+	       sizeof(region_t) + sizeof(page_t) * length / PAGE_SIZE);
+	printk(DEBUG "buddy part: %ldB\n",
+	       buddy_sizeof_alignment(length, PAGE_SIZE));
+
 	used = PAGE_ALIGN_UP(sizeof(region_t) +
+			     buddy_sizeof_alignment(length, PAGE_SIZE) +
 			     sizeof(page_t) * length / PAGE_SIZE);
 	if ((length - used) < PAGE_SIZE) {
 		return;
@@ -59,10 +70,15 @@ void pm_add_region(paddr_t base, size_t length)
 		region->pages[i].usage = kPageUseInternal;
 	}
 
-	pm_free_n(&region->pages[i], region->pagecnt - used / PAGE_SIZE);
+	void *metadata = &region->pages[region->pagecnt];
+	void *arena = (void *)(base.addr + used);
+	assert(((uintptr_t)arena % PAGE_SIZE) == 0);
 
-	printk(DEBUG "added pm region 0x%lx (%ld pages)\n", base.addr,
-		   length / PAGE_SIZE);
+	region->buddy =
+		buddy_init_alignment(metadata, arena, length - used, PAGE_SIZE);
+
+	printk(DEBUG "added pm region 0x%lx (%ld/%ld pages usable)\n",
+	       base.addr, (length - used) / PAGE_SIZE, length / PAGE_SIZE);
 }
 
 page_t *pm_allocate(short usage)
@@ -80,68 +96,34 @@ void pm_free(page_t *page)
 	pm_free_n(page, 1);
 }
 
-page_t *pm_allocate_n(size_t n, short usage)
+static region_t *find_buddy_region(size_t size, irql_t *old)
 {
-	page_t *elm, *prev, *start = nullptr;
-	size_t count = 0;
-
-	if (vmstat.total - vmstat.used < n)
-		return nullptr;
-	else if (n == 0)
-		return nullptr;
-
-	irql_t spinlock = spinlock_acquire(&page_lock, HIGH_LEVEL);
-
-	if (n == 1) {
-		elm = TAILQ_FIRST(&pagelist);
-		TAILQ_REMOVE(&pagelist, elm, entry);
-		vmstat.used += 1;
-		goto cleanup;
-	}
-
-	TAILQ_FOREACH(elm, &pagelist, entry)
+	region_t *elm;
+	struct buddy *buddy;
+	TAILQ_FOREACH(elm, &regionlist, entry)
 	{
-		prev = TAILQ_PREV(elm, pagelist, entry);
-		if (prev == nullptr) {
-			count = 0;
-			start = nullptr;
+		buddy = elm->buddy;
+		*old = spinlock_acquire(&elm->buddy_lock, HIGH_LEVEL);
+		if (buddy_arena_free_size(buddy) < size) {
+			spinlock_release(&elm->buddy_lock, *old);
 			continue;
 		}
-		if (prev->pfn + 1 == elm->pfn) {
-			if (count == 0)
-				start = prev;
-			if (count == n) {
-				for (size_t i = 0; i < n; i++) {
-					TAILQ_REMOVE(&pagelist, &start[i],
-						     entry);
-				}
-				break;
-			}
-			count++;
-		} else {
-			count = 0;
-			start = nullptr;
-		}
+		return elm;
 	}
+	panic("OOM");
+	return nullptr;
+}
 
-	if (count < n)
-		start = nullptr;
-
-	if (start != nullptr) {
-		vmstat.used += n;
-		for (size_t i = 0; i < n; i++) {
-#ifdef CONFIG_PM_CHECK
-			assert(start[i].usage == kPageUseFree);
-#endif
-			start[i].usage = usage;
-		}
-	}
-
-	elm = start;
-
-cleanup:
-	spinlock_release(&page_lock, spinlock);
-	return elm;
+page_t *pm_allocate_n(size_t n, short usage)
+{
+	irql_t irql;
+	region_t *region = find_buddy_region(n * PAGE_SIZE, &irql);
+	if (region == nullptr)
+		return nullptr;
+	void *mem = buddy_malloc(region->buddy, n * PAGE_SIZE);
+	assert(mem != nullptr);
+	spinlock_release(&region->buddy_lock, irql);
+	return pm_lookup(PADDR(mem));
 }
 
 page_t *pm_allocate_n_zeroed(size_t n, short usage)
@@ -156,84 +138,44 @@ page_t *pm_allocate_n_zeroed(size_t n, short usage)
 	return pages;
 }
 
-// skips search for page if:
-// * empty list
-// * smaller than queue head
-// * bigger than queue tail
-void pm_free_n(page_t *pages, size_t n)
-{
-	page_t *elm, *after, *last;
-	irql_t spinlock = spinlock_acquire(&page_lock, HIGH_LEVEL);
-
-	elm = TAILQ_FIRST(&pagelist);
-	if (elm != nullptr && pages[0].pfn < elm->pfn) {
-		for (size_t i = 0; i < n; i++) {
-			// 'reverse' insert of pages
-			TAILQ_INSERT_HEAD(&pagelist, &pages[n - i - 1], entry);
-		}
-		goto cleanup;
-	}
-	last = TAILQ_LAST(&pagelist, pagelist);
-	if (elm == nullptr || last->pfn < pages[0].pfn) {
-		for (size_t i = 0; i < n; i++) {
-			TAILQ_INSERT_TAIL(&pagelist, &pages[i], entry);
-		}
-		goto cleanup;
-	}
-
-	after = nullptr;
-	TAILQ_FOREACH(elm, &pagelist, entry)
-	{
-		if (elm->pfn < pages[0].pfn) {
-			after = elm;
-			break;
-		}
-	}
-
-	for (size_t i = 0; i < n; i++) {
-		TAILQ_INSERT_AFTER(&pagelist, after, &pages[i], entry);
-		after = &pages[i];
-	}
-
-cleanup:
-	for (size_t i = 0; i < n; i++) {
-		pages[i].usage = kPageUseFree;
-	}
-
-#ifdef CONFIG_PM_CHECK
-	page_t *tmp;
-	TAILQ_FOREACH(tmp, &pagelist, entry)
-	{
-		page_t *prev = TAILQ_PREV(tmp, pagelist, entry);
-		if (prev == nullptr)
-			continue;
-		assert(prev->pfn < tmp->pfn);
-		assert(tmp->usage == kPageUseFree);
-	}
-#endif
-
-	vmstat.used -= n;
-	spinlock_release(&page_lock, spinlock);
-}
-
-page_t *pm_lookup(paddr_t paddr)
+static region_t *pm_lookup_region(paddr_t paddr)
 {
 	region_t *region;
 	TAILQ_FOREACH(region, &regionlist, entry)
 	{
 		if ((paddr.addr >= region->base.addr) &&
 		    (paddr.addr <
+
 		     region->base.addr + region->pagecnt * PAGE_SIZE)) {
-			return &region->pages[(paddr.addr >> 12) -
-					      region->pages[0].pfn];
+			return region;
 		}
 	}
 	return nullptr;
 }
 
+static inline page_t *pm_lookup_with_region(paddr_t paddr, region_t *region)
+{
+	return &region->pages[(paddr.addr - region->base.addr) / PAGE_SIZE];
+}
+
+page_t *pm_lookup(paddr_t paddr)
+{
+	region_t *region = pm_lookup_region(paddr);
+	if (region == nullptr)
+		return nullptr;
+	return pm_lookup_with_region(paddr, region);
+}
+
+void pm_free_n(page_t *pages, size_t n)
+{
+	region_t *region = pm_lookup_region(PG2P(pages));
+	irql_t irql = spinlock_acquire(&region->buddy_lock, HIGH_LEVEL);
+	buddy_safe_free(region->buddy, (void *)PG2P(pages).addr, n * PAGE_SIZE);
+	spinlock_release(&region->buddy_lock, irql);
+}
+
 void vmstat_dump()
 {
-	printk(
-		"** VMSTAT **\n total: %ld\n used: %ld\n free: %ld\n** VMSTAT END **\n",
-		vmstat.total, vmstat.used, vmstat.total - vmstat.used);
+	printk("** VMSTAT **\n total: %ld\n used: %ld\n free: %ld\n** VMSTAT END **\n",
+	       vmstat.total, vmstat.used, vmstat.total - vmstat.used);
 }

@@ -57,7 +57,6 @@ struct region;
 typedef struct page {
 	uint64_t pfn;
 	short usage;
-	TAILQ_ENTRY(page) entry;
 } page_t;
 
 typedef struct vm_map {

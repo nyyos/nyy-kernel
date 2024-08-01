@@ -1,0 +1,14 @@
+diff --git a/buddy_alloc.h b/buddy_alloc.h
+index c22ffa4..404c37c 100644
+--- a/buddy_alloc.h
++++ b/buddy_alloc.h
+@@ -15,6 +15,9 @@
+ #ifndef BUDDY_ALLOC_H
+ #define BUDDY_ALLOC_H
+ 
++#include <ndk/ndk.h>
++#define BUDDY_PRINTF printk
++
+ #ifndef BUDDY_HEADER
+ #include <limits.h>
+ #include <stdbool.h>
