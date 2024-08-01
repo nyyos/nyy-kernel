@@ -35,6 +35,7 @@ void pm_add_region(paddr_t base, size_t length)
 	used = PAGE_ALIGN_UP(sizeof(region_t) +
 			     buddy_sizeof_alignment(length, PAGE_SIZE) +
 			     sizeof(page_t) * length / PAGE_SIZE);
+	// XXX: is 100 reasonable?
 	if ((length - used) < (PAGE_SIZE * 100)) {
 		return;
 	}
@@ -51,7 +52,6 @@ void pm_add_region(paddr_t base, size_t length)
 	  buddy_sizeof_alignment(length, PAGE_SIZE));
 #endif
 
-	printk("vmstat.total:%lu\n", vmstat.total);
 	vmstat.total += region->pagecnt;
 
 	for (i = 0; i < region->pagecnt; i++) {
