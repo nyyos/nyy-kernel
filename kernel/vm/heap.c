@@ -17,6 +17,13 @@ static void *allocwired(Vmem *vmem, size_t size, int vmflag)
 	page_t *page;
 	void *p = vmem_alloc(vmem, size, vmflag);
 
+	printk(DEBUG "allocate wired size: %ld\n", size);
+	page = pm_allocate_n(size / 0x1000, kPageUseWired);
+	for (uintptr_t i = 0; i < size / 0x1000; i++) {
+		vm_port_map(vm_kmap(), PG2P(&page[i]), VADDR((uintptr_t)p + i*0x1000),
+			    kVmWritethrough, kVmAll);
+	}
+#if 0
 	for (uintptr_t i = (uintptr_t)p; i < (uintptr_t)p + size;
 	     i += PAGE_SIZE) {
 		page = pm_allocate(kPageUseWired);
@@ -24,8 +31,9 @@ static void *allocwired(Vmem *vmem, size_t size, int vmflag)
 		vm_port_map(vm_kmap(), PG2P(page), VADDR(i), kVmWritethrough,
 			    kVmAll);
 	}
+#endif
 
-	printk(DEBUG "allocate wired memory\n");
+	printk(DEBUG "allocated wired memory\n");
 
 	return p;
 }

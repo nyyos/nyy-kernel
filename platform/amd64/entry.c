@@ -198,6 +198,7 @@ static void cpu_common_init(cpudata_t *cpudata)
 	cpudata_setup(cpudata);
 }
 
+#ifdef CONFIG_SMP
 struct smp_info {
 	bool ready;
 	cpudata_t data;
@@ -225,6 +226,7 @@ static void smp_entry(struct limine_smp_info *info)
 
 static void start_cores()
 {
+	printk(INFO "starting other cores\n");
 	struct limine_smp_response *res = smp_request.response;
 	for (size_t i = 0; i < res->cpu_count; i++) {
 		struct limine_smp_info *cpu = res->cpus[i];
@@ -248,6 +250,7 @@ static void start_cores()
 	}
 	printk(INFO "all cores up\n");
 }
+#endif
 
 cpudata_port_t *get_port_cpudata()
 {
@@ -350,6 +353,8 @@ void _start(void)
 	kmem_init();
 	vmstat_dump();
 	consume_modules();
+#ifdef CONFIG_SMP
 	start_cores();
+#endif
 	panic("Reached kernel end");
 }

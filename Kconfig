@@ -16,4 +16,8 @@ config STACKGUARD
 
 endmenu
 
+config SMP 
+    bool "Enable SMP"
+    default y
+
 source "$(ROOT)/kernel/Kconfig"

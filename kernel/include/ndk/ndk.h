@@ -15,6 +15,7 @@ typedef struct spinlock {
 #define SPINLOCK_INITIALIZER() {0}
 // clang-format on
 
+#ifdef CONFIG_SMP
 static inline void spinlock_release_no_irql(spinlock_t *spinlock)
 {
 	__atomic_store_n(&spinlock->flag, 0, __ATOMIC_RELEASE);
@@ -37,6 +38,20 @@ static inline bool spinlock_try_lock_no_irql(spinlock_t *spinlock)
 	return __atomic_compare_exchange_n(&spinlock->flag, &unlocked, 1, 0,
 					   __ATOMIC_ACQUIRE, __ATOMIC_RELAXED);
 }
+#else
+static inline void spinlock_release_no_irql(spinlock_t *spinlock)
+{
+}
+
+static inline void spinlock_acquire_no_irql(spinlock_t *spinlock)
+{
+}
+
+static inline bool spinlock_try_lock_no_irql(spinlock_t *spinlock)
+{
+	return true;
+}
+#endif
 
 static inline bool spinlock_try_lock(spinlock_t *spinlock, irql_t at,
 				     irql_t *old)
