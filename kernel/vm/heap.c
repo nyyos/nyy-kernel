@@ -44,8 +44,6 @@ static void freewired(Vmem *vmem, void *ptr, size_t size)
 	printk(DEBUG "free wired memory\n");
 }
 
-extern void pac_putc(int c, void *ctx);
-
 void kmem_init()
 {
 	vmem_bootstrap();
