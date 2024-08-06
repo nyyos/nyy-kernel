@@ -1,0 +1,7 @@
+[wrap-git]
+url = https://github.com/1vnt/pairing-heap
+revision = master
+depth = 1
+
+[provide]
+pairing_heap = pairing_heap_dep
