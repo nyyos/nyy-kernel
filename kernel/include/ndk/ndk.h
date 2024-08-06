@@ -1,5 +1,7 @@
 #pragma once
 
+#include <nyyconf.h>
+
 #include <nanoprintf.h>
 
 #include "ndk/irql.h"
