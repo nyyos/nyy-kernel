@@ -131,12 +131,4 @@ endif
 
 
 subdir('freestanding')
-
 subdir('kernel')
-if (arch == 'amd64')
-  subdir('platform/amd64')
-elif (arch == 'riscv64')
-  subdir('platform/riscv64-virt')
-elif (arch == 'linux')
-  subdir('platform/linux')
-endif
