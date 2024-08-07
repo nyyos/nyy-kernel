@@ -57,10 +57,10 @@ if conf.get('CONFIG_UBSAN', 'n') == 'y'
   freestanding_c_args += '-fsanitize=undefined' 
 endif
 
-build_limine = false
+use_limine = false
 
 if (arch == 'amd64')
-  build_limine = true
+  use_limine = true
   meson_cpu_family = 'x86_64'
   cpu = 'amd64'
   freestanding_c_args += [
@@ -76,14 +76,14 @@ if (arch == 'amd64')
     '-DAMD64'
   ]
 elif (arch == 'aarch64')
-  build_limine = true
+  use_limine = true
   meson_cpu_family = 'aarch64'
   cpu = 'aarch64'
   freestanding_c_args += [
     '-mgeneral-regs-only'
   ]
 elif (arch == 'riscv64')
-  build_limine = true
+  use_limine = true
   meson_cpu_family = 'riscv64'
   cpu = meson_cpu_family
   if meson.get_compiler('c').get_id() == 'clang'
@@ -111,17 +111,19 @@ else
   error('\n\tbad arch')
 endif
 
+freestanding_c_args += ['-DARCHNAME="' + arch +'"']
+
 kernel_sources = []
 freestanding_include_dirs = [ include_directories(
   'kernel/include',
   'kernel'
 )]
 
-if(build_limine)
+if(use_limine)
   freestanding_include_dirs += [include_directories('vendor/limine')]
 endif
 
-if(build_limine)
+if(use_limine)
   executable(
     'limine',
     'vendor/limine/limine.c',

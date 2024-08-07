@@ -35,8 +35,8 @@ void pm_add_region(paddr_t base, size_t length)
 	used = PAGE_ALIGN_UP(sizeof(region_t) +
 			     buddy_sizeof_alignment(length, PAGE_SIZE) +
 			     sizeof(page_t) * length / PAGE_SIZE);
-	// XXX: is 100 reasonable?
-	if ((length - used) < (PAGE_SIZE * 100)) {
+	// XXX: is 50 reasonable?
+	if ((length - used) < (PAGE_SIZE * 50)) {
 		return;
 	}
 

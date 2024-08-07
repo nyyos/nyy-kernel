@@ -13,3 +13,7 @@
 #else
 #error "port unsupported"
 #endif
+
+#ifndef ARCH_HAS_SPIN_HINT
+#define port_spin_hint() (void)0
+#endif

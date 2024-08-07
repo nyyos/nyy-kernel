@@ -7,6 +7,7 @@
 
 #define MEM_KERNEL_START 0xFFFFE00000000000L
 #define MEM_KERNEL_SIZE TiB(1)
+#define MEM_KERNEL_BASE 0xFFFFFFFF80000000L
 
 typedef struct cpudata_port {
 	struct cpudata_port *self;
@@ -55,6 +56,7 @@ typedef struct [[gnu::packed]] cpu_state {
 #define STATE_SP(state) (state)->rsp
 #define STATE_IP(state) (state)->rip
 
+#define ARCH_HAS_SPIN_HINT
 static inline void port_spin_hint()
 {
 	asm volatile("pause");

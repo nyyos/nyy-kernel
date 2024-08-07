@@ -10,9 +10,9 @@ typedef struct cpudata {
 
 void cpudata_setup(cpudata_t *cpudata);
 void cpudata_port_setup(cpudata_port_t *cpudata);
-cpudata_port_t *get_port_cpudata();
+cpudata_port_t *port_get_cpudata();
 
 static inline cpudata_t *cpudata()
 {
-	return (cpudata_t *)get_port_cpudata();
+	return (cpudata_t *)port_get_cpudata();
 }
