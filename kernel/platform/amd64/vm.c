@@ -127,9 +127,11 @@ void vm_port_map(vm_map_t *map, paddr_t paddr, vaddr_t vaddr, uint64_t cache,
 		switch (flags >> kVmHugeShift) {
 		// log2 values
 		case 21:
+			assert((paddr.addr % MiB(2)) == 0);
 			walk_flags |= pteFlag2MB;
 			break;
 		case 30:
+			assert((paddr.addr % GiB(1)) == 0);
 			walk_flags |= pteFlag1GB;
 			break;
 		default:
