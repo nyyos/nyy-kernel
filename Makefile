@@ -1,4 +1,4 @@
-ARCH ?= amd64
+export ARCH ?= amd64
 
 all:
 	@meson compile -C build-$(ARCH)

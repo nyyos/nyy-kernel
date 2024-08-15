@@ -1,5 +1,6 @@
 #include <limine.h>
 
+#include <nyyconf.h>
 #include <limine-generic.h>
 #include <ndk/vm.h>
 #include <dkit/console.h>
@@ -23,6 +24,7 @@ cpudata_port_t *port_get_cpudata()
 	return data;
 }
 
+#ifdef CONFIG_SERIAL
 static void serial_putc(int c)
 {
 	while (!(inb(COM1 + 5) & 0x20))
@@ -58,6 +60,7 @@ void _port_init_boot_consoles()
 	serial_init();
 	console_add(&serial_console);
 }
+#endif
 
 void port_init_bsp(cpudata_t *bsp_data)
 {

@@ -1,1 +1,6 @@
+config SMP 
+    bool "Enable SMP"
+    default y
+
 source "$(ROOT)/kernel/vm/Kconfig"
+source "$(ROOT)/kernel/platform/$(ARCH)/Kconfig"
