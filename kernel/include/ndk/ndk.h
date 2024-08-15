@@ -84,8 +84,8 @@ static inline irql_t spinlock_acquire(spinlock_t *spinlock, irql_t at)
 #define DEBUG "\4"
 #define PANIC "\5"
 
-void printk(const char *fmt, ...);
-void printk_locked(const char *fmt, ...);
+__attribute__((format(printf, 1, 2))) void printk(const char *fmt, ...);
+__attribute__((format(printf, 1, 2))) void printk_locked(const char *fmt, ...);
 void _printk_consoles_write(const char *buf, size_t size);
 void _printk_init();
 

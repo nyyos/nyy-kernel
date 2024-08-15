@@ -7,7 +7,7 @@ qemu_args=
 while getopts "kngspq:9" optchar; do
 	case $optchar in
 	s) serial_stdio=1 ;;
-	k) qemu_args="$qemu_args -enable-kvm" ;;
+	k) qemu_args="$qemu_args -enable-kvm -cpu host" ;;
 	n) qemu_args="$qemu_args -drive file=test.img,if=none,id=nvm -device nvme,serial=deadbeef,drive=nvm" ;;
 	p) pause=1 ;;
 		#q) QEMU_EXE=$OPTARG;;
