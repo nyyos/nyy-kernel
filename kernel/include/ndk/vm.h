@@ -60,7 +60,7 @@ typedef struct page {
 } page_t;
 
 typedef struct vm_map {
-	Vmem* arena;
+	Vmem *arena;
 	vm_port_map_t portstate;
 } vm_map_t;
 
@@ -97,12 +97,13 @@ void vm_map_destroy(vm_map_t *map);
 vm_map_t *vm_kmap();
 void vm_setup_kmap();
 
-void* vm_map_allocate(vm_map_t* map, size_t length);
+void *vm_map_allocate(vm_map_t *map, size_t length);
 
 void vm_port_init_map(vm_map_t *map);
 
 void vm_port_unmap(vm_map_t *map, vaddr_t vaddr, uint64_t flags);
 void vm_port_map(vm_map_t *map, paddr_t paddr, vaddr_t vaddr, uint64_t cache,
 		 uint64_t flags);
+paddr_t vm_port_translate_paddr(vm_map_t *map, vaddr_t addr);
 page_t *vm_port_translate(vm_map_t *map, vaddr_t addr);
 void vm_port_activate(vm_map_t *map);

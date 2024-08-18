@@ -1,10 +1,10 @@
-#include "backends/fb.h"
-#include "dkit/console.h"
-#include "flanterm.h"
-#include "ndk/addr.h"
-#include "ndk/internal/symbol.h"
-#include <assert.h>
-#include "ndk/vm.h"
+#include <backends/fb.h>
+#include <dkit/console.h>
+#include <flanterm.h>
+#include <ndk/addr.h>
+#include <ndk/internal/boot.h>
+#include <ndk/internal/symbol.h>
+#include <ndk/vm.h>
 #include <limine.h>
 #include <ndk/kmem.h>
 #include <nyyconf.h>
@@ -57,18 +57,9 @@ LIMINE_REQ static volatile struct limine_module_request module_request = {
 	.revision = 0
 };
 
-static cpudata_t bsp_data;
+cpudata_t bsp_data;
 
-extern char addr_data_end[];
-extern char addr_data_start[];
-
-extern char addr_text_end[];
-extern char addr_text_start[];
-
-extern char addr_rodata_end[];
-extern char addr_rodata_start[];
-
-void remap_kernel()
+void limine_remap_mem()
 {
 	struct limine_kernel_address_response *address_res =
 		address_request.response;
@@ -77,31 +68,7 @@ void remap_kernel()
 	paddr_t paddr = PADDR(address_res->physical_base);
 	vaddr_t vaddr = VADDR(address_res->virtual_base);
 
-	size_t offset = vaddr.addr - MEM_KERNEL_BASE;
-	symbols_init(offset);
-
-	vm_map_t *kmap = vm_kmap();
-
-#define MAP_SECTION(SECTION, VMFLAGS)                                 \
-	uintptr_t SECTION##_start =                                   \
-		PAGE_ALIGN_DOWN((uint64_t)addr_##SECTION##_start);    \
-	uintptr_t SECTION##_end =                                     \
-		PAGE_ALIGN_UP((uint64_t)addr_##SECTION##_end);        \
-	for (uintptr_t i = SECTION##_start; i < SECTION##_end;        \
-	     i += PAGE_SIZE) {                                        \
-		vm_port_map(kmap, PADDR(i - vaddr.addr + paddr.addr), \
-			    VADDR(i), kVmWritethrough, (VMFLAGS));    \
-	}
-
-	MAP_SECTION(text, kVmKernelCode | kVmGlobal);
-	MAP_SECTION(rodata, kVmRead | kVmGlobal);
-	MAP_SECTION(data, kVmAll | kVmGlobal);
-
-#undef MAP_SECTION
-
-#ifdef CONFIG_HHDM_HUGEPAGES
-	printk(DEBUG "HHDM hugepages => enabled\n");
-#endif
+	remap_kernel(paddr, vaddr);
 
 	struct limine_memmap_entry **entries = memmap_res->entries;
 	for (size_t i = 0; i < memmap_res->entry_count; i++) {
@@ -110,60 +77,13 @@ void remap_kernel()
 			continue;
 		int cacheflags = kVmWritethrough;
 		if (entry->type == LIMINE_MEMMAP_FRAMEBUFFER) {
-			cacheflags = kVmUncached;
+			cacheflags = kVmWritecombine;
 		}
 
-		uintptr_t base = entry->base;
-		uintptr_t end = base + entry->length;
-
-		// map initial unaligned part until aligned to 2MB
-		while (base < end) {
-#ifdef AMD64
-#ifdef CONFIG_HHDM_HUGEPAGES
-			if ((base % MiB(2)) == 0) {
-				break;
-			}
-#endif
-#endif
-
-			vm_port_map(kmap, PADDR(base),
-				    VADDR(REAL_HHDM_START.addr + base),
-				    cacheflags, kVmGlobal | kVmAll);
-			base += PAGE_SIZE;
-		}
-
-#ifdef AMD64
-#ifdef CONFIG_HHDM_HUGEPAGES
-		// map using the largest possible pages
-		while (base < end) {
-			// XXX: check if gb pages are supported with cpuid
-			if ((base % GiB(1)) == 0 && (base + GiB(1) <= end)) {
-				vm_port_map(kmap, PADDR(base),
-					    VADDR(REAL_HHDM_START.addr + base),
-					    cacheflags,
-					    kVmGlobal | kVmAll | kVmHuge1GB);
-				base += GiB(1);
-			} else if ((base % MiB(2)) == 0 &&
-				   (base + MiB(2) <= end)) {
-				vm_port_map(kmap, PADDR(base),
-					    VADDR(REAL_HHDM_START.addr + base),
-					    cacheflags,
-					    kVmGlobal | kVmAll | kVmHuge2MB);
-				base += MiB(2);
-			} else {
-				vm_port_map(kmap, PADDR(base),
-					    VADDR(REAL_HHDM_START.addr + base),
-					    cacheflags, kVmGlobal | kVmAll);
-				base += PAGE_SIZE;
-			}
-		}
-#endif
-#endif
-
-		assert(base <= end);
+		remap_memmap_entry(entry->base, entry->length, cacheflags);
 	}
 
-	printk(INFO "remapped kernel\n");
+	printk(INFO "remapped memory\n");
 }
 
 #ifdef CONFIG_SMP
@@ -256,7 +176,7 @@ void limine_entry(void)
 	_port_init_boot_consoles();
 	early_fb_init();
 
-	printk(INFO "Nyy//" ARCHNAME " (Built on: " __DATE__ " " __TIME__
+	printk(INFO "Nyy//limine " ARCHNAME " (Built on: " __DATE__ " " __TIME__
 		    ")\n");
 
 	port_init_bsp(&bsp_data);
@@ -272,7 +192,7 @@ void limine_entry(void)
 	printk(INFO "initialized pm\n");
 
 	vm_port_init_map(vm_kmap());
-	remap_kernel();
+	limine_remap_mem();
 	vm_port_activate(vm_kmap());
 	kmem_init();
 	consume_modules();

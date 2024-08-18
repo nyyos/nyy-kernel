@@ -4,6 +4,7 @@
 
 enum msr {
 	kMsrLapicBase = 0x1B,
+	kMsrPAT = 0x277,
 	kMsrEfer = 0xC0000080,
 	kMsrStar = 0xC0000081,
 	kMsrLstar = 0xC0000082,
@@ -38,3 +39,21 @@ static inline uint8_t inb(uint16_t port)
 	__asm__ volatile("inb %w1, %b0" : "=a"(ret) : "Nd"(port) : "memory");
 	return ret;
 }
+
+#define FN_CR(REG)                                                 \
+	static inline uint64_t read_cr##REG()                      \
+	{                                                          \
+		uint64_t data;                                     \
+		asm volatile("mov %%cr" #REG ", %0" : "=r"(data)); \
+		return data;                                       \
+	}                                                          \
+	static inline void write_cr##REG(uint64_t val)             \
+	{                                                          \
+		asm volatile("mov %0, %%cr" #REG ::"a"(val));      \
+	}
+
+FN_CR(0);
+FN_CR(1);
+FN_CR(2);
+FN_CR(3);
+FN_CR(4);

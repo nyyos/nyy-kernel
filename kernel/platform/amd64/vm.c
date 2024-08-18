@@ -7,10 +7,11 @@ enum pte_masks {
 	ptePresent = 0x1,
 	pteWrite = 0x2,
 	pteUser = 0x4,
-	pteWritethrough = 0x10,
-	pteUncached = 0x8,
+	ptePwt = 0x8,
+	ptePcd = 0x10,
 	pteAccess = 0x20,
 	pteModified = 0x40,
+	ptePat = 0x80,
 	ptePagesize = 0x80,
 	pteGlobal = 0x100,
 	pteAddress = 0x000FFFFFFFFFF000,
@@ -154,17 +155,21 @@ void vm_port_map(vm_map_t *map, paddr_t paddr, vaddr_t vaddr, uint64_t cache,
 		new_entry |= pteNoExecute;
 
 	switch (cache) {
+		// PAT indexed like
+		// [PAT|PCD|PWT]
 	case kVmWritecombine:
-		assert(!"todo");
-		break;
+		// PA5
+		new_entry |= ptePat | ptePwt;
 	case kVmWritethrough:
-		new_entry |= pteWritethrough;
+		// PA1
+		new_entry |= ptePwt;
 		break;
 	case kVmWriteback:
-		assert(!"todo");
+		// PA0
 		break;
 	case kVmUncached:
-		new_entry |= pteUncached;
+		// PA3
+		new_entry |= ptePcd | ptePwt;
 		break;
 	}
 
@@ -173,12 +178,20 @@ void vm_port_map(vm_map_t *map, paddr_t paddr, vaddr_t vaddr, uint64_t cache,
 	invlpg(vaddr);
 }
 
-page_t *vm_port_translate(vm_map_t *map, vaddr_t addr)
+paddr_t vm_port_translate_paddr(vm_map_t *map, vaddr_t addr)
 {
 	uint64_t *pte = pte_walk(map, addr, 0);
 	if (!pte)
-		return nullptr;
-	return pm_lookup(PADDR(*pte & pteAddress));
+		return PADDR(-1);
+	return PADDR(*pte & pteAddress);
+}
+
+page_t *vm_port_translate(vm_map_t *map, vaddr_t addr)
+{
+	paddr_t paddr = vm_port_translate_paddr(map, addr);
+	if (paddr.addr == -1)
+		return NULL;
+	return pm_lookup(paddr);
 }
 
 void vm_port_activate(vm_map_t *map)

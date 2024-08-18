@@ -136,6 +136,7 @@ void handle_fault(cpu_state_t *frame, int number)
 	printk("cpu state:\n");
 	DUMP_STATE(frame);
 	printk("\n");
+	printk("fault number: %d\n", number);
 	if (number == 14) {
 		handle_pf(frame);
 	} else {

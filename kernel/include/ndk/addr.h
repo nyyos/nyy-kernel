@@ -2,8 +2,8 @@
 
 #include <stdint.h>
 
-#define PAGE_ALIGN_UP(addr) ALIGN_UP(addr, PAGE_SIZE);
-#define PAGE_ALIGN_DOWN(addr) ALIGN_DOWN(addr, PAGE_SIZE);
+#define PAGE_ALIGN_UP(addr) ALIGN_UP(addr, PAGE_SIZE)
+#define PAGE_ALIGN_DOWN(addr) ALIGN_DOWN(addr, PAGE_SIZE)
 
 typedef struct paddr {
 	uintptr_t addr;

@@ -68,12 +68,55 @@ void port_init_bsp(cpudata_t *bsp_data)
 	cpu_idt_init();
 }
 
+void port_pat_setup()
+{
+#define PAT_UC 0x0L
+#define PAT_WC 0x1L
+#define PAT_WT 0x4L
+#define PAT_WP 0x5L
+#define PAT_WB 0x6L
+#define PAT_UCMINUS 0x7L
+#define PA_N(type, n) ((uint64_t)(type) << (n * 8))
+
+	uint64_t pat = PA_N(PAT_WB, 0) | PA_N(PAT_WT, 1) |
+		       PA_N(PAT_UCMINUS, 2) | PA_N(PAT_UC, 3) |
+		       PA_N(PAT_WP, 4) | PA_N(PAT_WC, 5);
+	wrmsr(kMsrPAT, pat);
+
+#undef PA_N
+#undef PAT_UC
+#undef PAT_WC
+#undef PAT_WT
+#undef PAT_WB
+#undef PAT_WP
+#undef PAT_UCMINUS
+}
+
+static void port_init_cpu()
+{
+	port_pat_setup();
+	uint64_t cr0 = read_cr0();
+	// clear CD and NW
+	cr0 &= ~(1 << 30);
+	cr0 &= ~(1 << 29);
+	// enable WP
+	cr0 |= (1 << 16);
+	write_cr0(cr0);
+	// enable PGE and PSE
+	// TODO: PCID?
+	write_cr4(read_cr4() | (1 << 4) | (1 << 7));
+	// enable NX
+	wrmsr(kMsrEfer, rdmsr(kMsrEfer) | (1 << 11));
+}
+
 void port_data_common_init(cpudata_t *data)
 {
 	cpu_gdt_load();
 	cpu_idt_load();
 
 	cpudata_setup(data);
+
+	port_init_cpu();
 }
 
 void port_smp_entry(struct limine_smp_info *info)
