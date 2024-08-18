@@ -75,7 +75,7 @@ void limine_remap_mem()
 		struct limine_memmap_entry *entry = entries[i];
 		if (entry->type == LIMINE_MEMMAP_RESERVED)
 			continue;
-		int cacheflags = kVmWritethrough;
+		int cacheflags = kVmWriteback;
 		if (entry->type == LIMINE_MEMMAP_FRAMEBUFFER) {
 			cacheflags = kVmWritecombine;
 		}

@@ -37,7 +37,11 @@ if [[ ! -f ${HYPER}/esp.img ]]; then
 fi
 
 mkdir -p "${ISOROOT}" &&
-	cp build-${PORT}/kernel/platform/amd64/nyy ${HYPER}/esp.img ${HYPER}/hyper_iso_boot "${ISOROOT}" &&
+	cp build-${PORT}/kernel/platform/amd64/nyy \
+		build-${PORT}/kernel/platform/amd64/symbols.map \
+		${HYPER}/esp.img \
+		${HYPER}/hyper_iso_boot \
+		"${ISOROOT}" &&
 	cp tools/hyper-amd64.cfg "${ISOROOT}/hyper.cfg" &&
 	xorriso -as mkisofs -b hyper_iso_boot \
 		-no-emul-boot -boot-load-size 4 -boot-info-table \
