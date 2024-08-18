@@ -3,15 +3,17 @@
 PORT=amd64
 
 qemu_args=
+iso="build-${PORT}/nyy.iso"
 
-while getopts "kngspq:9" optchar; do
+while getopts "kngspuq:10" optchar; do
 	case $optchar in
 	s) serial_stdio=1 ;;
 	k) qemu_args="$qemu_args -enable-kvm -cpu host" ;;
 	n) qemu_args="$qemu_args -drive file=test.img,if=none,id=nvm -device nvme,serial=deadbeef,drive=nvm" ;;
 	p) pause=1 ;;
-		#q) QEMU_EXE=$OPTARG;;
+	q) QEMU_EXE=$OPTARG;;
 	g) qemu_args="$qemu_args -M smm=off -d int -D qemulog.txt" ;;
+	u) iso="build-${PORT}/nyy-${PORT}-hyper.iso" ;;
 	*) exit 1 ;;
 	esac
 done
@@ -27,6 +29,6 @@ if [ "$pause" = "1" ]; then
 fi
 
 ${QEMU_EXE} -m 256M -smp 4 -M q35 \
-	-cdrom "build-${PORT}/nyy.iso" \
+	-cdrom "${iso}" \
 	-no-shutdown -no-reboot \
 	${qemu_args}

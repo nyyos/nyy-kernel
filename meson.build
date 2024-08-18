@@ -42,8 +42,10 @@ freestanding_c_args = [
   '-fno-omit-frame-pointer',
   '-nostdinc',
   '-ffreestanding',
-  '-fPIE',
-  '-fPIC',
+  '-fno-PIC',
+  '-fno-lto',
+  '-ffunction-sections',
+  '-fdata-sections',
   warnings,
 ]
 

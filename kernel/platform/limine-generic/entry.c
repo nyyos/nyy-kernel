@@ -68,9 +68,6 @@ extern char addr_text_start[];
 extern char addr_rodata_end[];
 extern char addr_rodata_start[];
 
-extern char addr_requests_end[];
-extern char addr_requests_start[];
-
 void remap_kernel()
 {
 	struct limine_kernel_address_response *address_res =
@@ -96,7 +93,6 @@ void remap_kernel()
 			    VADDR(i), kVmWritethrough, (VMFLAGS));    \
 	}
 
-	MAP_SECTION(requests, kVmRead | kVmGlobal);
 	MAP_SECTION(text, kVmKernelCode | kVmGlobal);
 	MAP_SECTION(rodata, kVmRead | kVmGlobal);
 	MAP_SECTION(data, kVmAll | kVmGlobal);
@@ -253,7 +249,7 @@ static void consume_modules()
 	}
 }
 
-void _start(void)
+void limine_entry(void)
 {
 	REAL_HHDM_START = PADDR(hhdm_request.response->offset);
 	_printk_init();

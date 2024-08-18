@@ -15,6 +15,10 @@ run:
 	./tools/mkiso-$(ARCH).sh
 	./tools/run-$(ARCH).sh -sk
 
+run-hyper:
+	./tools/mkiso-$(ARCH)-hyper.sh
+	./tools/run-$(ARCH).sh -sku
+
 gdb:
 	./tools/mkiso-$(ARCH).sh
 	./tools/run-$(ARCH).sh -sgp
