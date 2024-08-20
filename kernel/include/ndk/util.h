@@ -3,9 +3,9 @@
 #include <stddef.h>
 
 #define ALIGN_UP(addr, align) (((addr) + align - 1) & ~(align - 1))
-#define ALIGN_DOWN(addr, align) ((addr) & ~((align)-1))
+#define ALIGN_DOWN(addr, align) ((addr) & ~((align) - 1))
 
-#define DIV_ROUNDUP(a, b) (((a) + ((b)-1)) / (b))
+#define DIV_ROUNDUP(a, b) (((a) + ((b) - 1)) / (b))
 
 #define KiB(o) ((size_t)(1L << 10) * (o))
 #define MiB(o) ((size_t)(1L << 20) * (o))
@@ -17,3 +17,5 @@
 		const typeof(((type *)0)->member) *__mptr = (ptr); \
 		(type *)((char *)__mptr - offsetof(type, member)); \
 	})
+
+#define elementsof(arr) (sizeof((arr)) / sizeof((arr)[0]))

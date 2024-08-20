@@ -1,16 +1,15 @@
 #include <assert.h>
-#include <lib/vmem.h>
+#include <string.h>
 
+#include <lib/vmem.h>
 #include <ndk/ndk.h>
 #include <ndk/port.h>
 #include <ndk/vm.h>
-#include <string.h>
+#include <ndk/internal/slab_impl.h>
+#include <ndk/kmem.h>
 
 static Vmem vmem_va;
 static Vmem vmem_wired;
-#define BUMP_ARENA_SIZE PAGE_SIZE * 100 
-static char *g_bumparena;
-static volatile size_t g_bump_pos;
 
 static void *allocwired(Vmem *vmem, size_t size, int vmflag)
 {
@@ -25,7 +24,9 @@ static void *allocwired(Vmem *vmem, size_t size, int vmflag)
 			    kVmAll);
 	}
 
+#if 0
 	printk(DEBUG "allocated wired memory\n");
+#endif
 
 	return p;
 }
@@ -44,6 +45,21 @@ static void freewired(Vmem *vmem, void *ptr, size_t size)
 	printk(DEBUG "free wired memory\n");
 }
 
+void *vm_kalloc(size_t count, int flags)
+{
+	return vmem_alloc(&vmem_wired, count * PAGE_SIZE, flags);
+}
+
+void vm_kfree(void *addr, size_t count)
+{
+	vmem_free(&vmem_wired, addr, count * PAGE_SIZE);
+}
+
+static size_t kmalloc_sizes[] = { 8,   16,  32,	 64,  128,  160,
+				  256, 512, 640, 768, 1024, 2048 };
+static kmem_cache_t *kmalloc_caches[elementsof(kmalloc_sizes)];
+#define KMALLOC_MAX 2048
+
 void kmem_init()
 {
 	vmem_bootstrap();
@@ -52,32 +68,27 @@ void kmem_init()
 	vm_kmap()->arena = &vmem_va;
 	vmem_init(&vmem_wired, "kernel-wired", nullptr, 0, PAGE_SIZE,
 		  &allocwired, &freewired, &vmem_va, 0, 0);
+	vmem_alloc(&vmem_va, 0x1000, 0);
 	printk(INFO "created kernel VA arena (%p-%p)\n",
 	       (void *)MEM_KERNEL_START,
 	       (void *)(MEM_KERNEL_START + MEM_KERNEL_SIZE));
 
-	g_bump_pos = 0;
-	g_bumparena = vmem_alloc(&vmem_wired, BUMP_ARENA_SIZE, VM_BESTFIT);
+	kmem_slab_init();
+
+	for (int i = 0; i < elementsof(kmalloc_sizes); i++) {
+		kmalloc_caches[i] = kmem_cache_create(
+			"kmalloc", kmalloc_sizes[i], 0, NULL, NULL, NULL, 0);
+	}
 }
 
 void *kmalloc(size_t size)
 {
-	size = ALIGN_UP(size, 16);
-	size_t oldpos;
-	size_t newpos;
-
-	do {
-		oldpos = __atomic_load_n(&g_bump_pos, __ATOMIC_ACQUIRE);
-		newpos = oldpos + size;
-		if (newpos > BUMP_ARENA_SIZE) {
-			assert(!"go implement a slab alloc");
-			return NULL;
+	for (int i = 0; i < elementsof(kmalloc_sizes); i++) {
+		if (size <= kmalloc_sizes[i]) {
+			return kmem_cache_alloc(kmalloc_caches[i], 0);
 		}
-	} while (!__atomic_compare_exchange_n(&g_bump_pos, &oldpos, newpos, 1,
-					      __ATOMIC_RELEASE,
-					      __ATOMIC_RELAXED));
-
-	return &g_bumparena[oldpos];
+	}
+	return vm_kalloc(PAGE_ALIGN_UP(size), 0);
 }
 
 void *kcalloc(size_t count, size_t size)
@@ -91,5 +102,11 @@ void *kcalloc(size_t count, size_t size)
 
 void kfree(void *ptr, size_t size)
 {
-	// nop
+	for (int i = 0; i < elementsof(kmalloc_sizes); i++) {
+		if (size <= kmalloc_sizes[i]) {
+			kmem_cache_free(kmalloc_caches[i], ptr);
+			return;
+		}
+	}
+	vm_kfree(ptr, PAGE_ALIGN_UP(size));
 }

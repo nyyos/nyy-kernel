@@ -107,3 +107,6 @@ void vm_port_map(vm_map_t *map, paddr_t paddr, vaddr_t vaddr, uint64_t cache,
 paddr_t vm_port_translate_paddr(vm_map_t *map, vaddr_t addr);
 page_t *vm_port_translate(vm_map_t *map, vaddr_t addr);
 void vm_port_activate(vm_map_t *map);
+
+void *vm_kalloc(size_t pages, int flags);
+void vm_kfree(void *addr, size_t pages);

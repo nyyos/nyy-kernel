@@ -328,6 +328,9 @@ void *vmem_xalloc(Vmem *vmp, size_t size, size_t align, size_t phase,
 	}
 	assert((align % vmp->quantum) == 0);
 
+	if (!(vmflag & VM_BESTFIT) && !(vmflag & VM_INSTANTFIT))
+		vmflag = VM_INSTANTFIT;
+
 	if (!(vmflag & VM_BOOTSTRAP))
 		ASSERT(repopulate_segments() == 0);
 
