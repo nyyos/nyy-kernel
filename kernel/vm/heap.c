@@ -57,6 +57,11 @@ void vm_kfree(void *addr, size_t count)
 
 static size_t kmalloc_sizes[] = { 8,   16,  32,	 64,  128,  160,
 				  256, 512, 640, 768, 1024, 2048 };
+static const char *kmalloc_names[] = {
+	"kmalloc_8",   "kmalloc_16",  "kmalloc_32",   "kmalloc_64",
+	"kmalloc_128", "kmalloc_160", "kmalloc_256",  "kmalloc_512",
+	"kmalloc_640", "kmalloc_768", "kmalloc_1024", "kmalloc_2048"
+};
 static kmem_cache_t *kmalloc_caches[elementsof(kmalloc_sizes)];
 #define KMALLOC_MAX 2048
 
@@ -76,8 +81,9 @@ void kmem_init()
 	kmem_slab_init();
 
 	for (int i = 0; i < elementsof(kmalloc_sizes); i++) {
-		kmalloc_caches[i] = kmem_cache_create(
-			"kmalloc", kmalloc_sizes[i], 0, NULL, NULL, NULL, 0);
+		kmalloc_caches[i] = kmem_cache_create(kmalloc_names[i],
+						      kmalloc_sizes[i], 0, NULL,
+						      NULL, NULL, 0);
 	}
 }
 

@@ -161,6 +161,9 @@ kmem_cache_t *kmem_cache_create(const char *name, size_t bufsize, size_t align,
 {
 	size_t chunksize;
 
+	// check if P2
+	assert(align == 0 || P2CHECK(align));
+
 	if (align == 0) {
 		if (ALIGN_UP(bufsize, KMEM_ALIGN) >= KMEM_SECOND_ALIGN)
 			align = KMEM_SECOND_ALIGN;
@@ -168,9 +171,6 @@ kmem_cache_t *kmem_cache_create(const char *name, size_t bufsize, size_t align,
 			align = KMEM_ALIGN;
 	} else if (align < KMEM_ALIGN)
 		align = KMEM_ALIGN;
-
-	// check if P2
-	assert((align & (align - 1)) == 0);
 
 	kmem_cache_t *cp;
 	if (kmflags & KMEM_BOOSTRAP || 1)

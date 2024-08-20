@@ -4,6 +4,7 @@
 
 #define ALIGN_UP(addr, align) (((addr) + align - 1) & ~(align - 1))
 #define ALIGN_DOWN(addr, align) ((addr) & ~((align) - 1))
+#define SWAP(a, b) (((a) ^= (b)), ((b) ^= (a)), ((a) ^= (b)))
 
 #define DIV_ROUNDUP(a, b) (((a) + ((b) - 1)) / (b))
 
@@ -19,3 +20,6 @@
 	})
 
 #define elementsof(arr) (sizeof((arr)) / sizeof((arr)[0]))
+
+// beware: 0 is incorrectly considered a power of two by this
+#define P2CHECK(v) (((v) & ((v) - 1)) == 0)
