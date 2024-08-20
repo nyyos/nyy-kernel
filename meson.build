@@ -46,6 +46,7 @@ freestanding_c_args = [
   '-fno-lto',
   '-ffunction-sections',
   '-fdata-sections',
+  '-D__KERNEL__',
   warnings,
 ]
 

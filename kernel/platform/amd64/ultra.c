@@ -198,7 +198,6 @@ void ultra_entry(struct ultra_boot_context *ctx, uint32_t magic)
 				  ultra_symbol_map->size);
 	}
 
-	panic("test");
 	printk(WARN "TODO: implement hyper boot...\n");
 
 	hcf();
