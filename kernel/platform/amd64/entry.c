@@ -8,6 +8,8 @@
 #include "asm.h"
 #include "gdt.h"
 #include "idt.h"
+#include "early_acpi.h"
+#include "hpet.h"
 
 #define COM1 0x3f8
 
@@ -136,4 +138,17 @@ void port_smp_entry(struct limine_smp_info *info)
 	__atomic_store(&nyy_info->ready, &ready, __ATOMIC_RELEASE);
 
 	hcf();
+}
+
+#define LIMINE_REQ __attribute__((used, section(".requests")))
+
+LIMINE_REQ static volatile struct limine_rsdp_request rsdp_request = {
+	.id = LIMINE_RSDP_REQUEST,
+	.revision = 0
+};
+
+void port_scheduler_init()
+{
+	acpi_early_set_rsdp(rsdp_request.response->address);
+	hpet_init();
 }

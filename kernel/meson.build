@@ -3,7 +3,7 @@ subdir('vm')
 subdir('irq')
 subdir('boot')
 
-# XXX: make this depend on arch?
+# XXX: make this depend on config
 subdir('acpi')
 
 if (use_limine)

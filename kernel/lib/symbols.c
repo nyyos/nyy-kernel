@@ -1,6 +1,7 @@
 #include <ndk/internal/symbol.h>
 #include <ndk/ndk.h>
 #include <ndk/kmem.h>
+#include <ndk/util.h>
 
 #include <string.h>
 #include <sys/queue.h>
@@ -18,6 +19,21 @@ size_t symbols_offset()
 {
 	return symbol_offset;
 }
+
+#if 0
+static char bump_arena[PAGE_SIZE * 64];
+static size_t bump_pos = 0;
+
+void *bump_alloc(size_t size)
+{
+	size = ALIGN_UP(size, 8);
+	void *cur = &bump_arena[bump_pos];
+	bump_pos += size;
+	return cur;
+}
+
+#define kmalloc(size) bump_alloc(size)
+#endif
 
 void symbols_insert(const char *name, uintptr_t address)
 {

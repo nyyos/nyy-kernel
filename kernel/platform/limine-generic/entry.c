@@ -73,14 +73,15 @@ void limine_remap_mem()
 	struct limine_memmap_entry **entries = memmap_res->entries;
 	for (size_t i = 0; i < memmap_res->entry_count; i++) {
 		struct limine_memmap_entry *entry = entries[i];
-		if (entry->type == LIMINE_MEMMAP_RESERVED)
-			continue;
+		uintptr_t base = PAGE_ALIGN_DOWN(entry->base);
+		size_t length = PAGE_ALIGN_UP(entry->length);
+
 		int cacheflags = kVmWriteback;
 		if (entry->type == LIMINE_MEMMAP_FRAMEBUFFER) {
 			cacheflags = kVmWritecombine;
 		}
 
-		remap_memmap_entry(entry->base, entry->length, cacheflags);
+		remap_memmap_entry(base, length, cacheflags);
 	}
 
 	printk(INFO "remapped memory\n");
@@ -157,6 +158,10 @@ static void early_fb_init()
 {
 }
 
+[[gnu::weak]] void port_scheduler_init()
+{
+}
+
 static void consume_modules()
 {
 	struct limine_module_response *res = module_request.response;
@@ -194,8 +199,10 @@ void limine_entry(void)
 	vm_port_init_map(vm_kmap());
 	limine_remap_mem();
 	vm_port_activate(vm_kmap());
+
 	kmem_init();
 	consume_modules();
+	port_scheduler_init();
 
 #ifdef CONFIG_SMP
 	start_cores();

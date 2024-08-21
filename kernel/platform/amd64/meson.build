@@ -1,11 +1,10 @@
 ultra_protocol = dependency('ultra_protocol')
 
-
 nyy = executable('nyy', 
   'entry.c', 'gdt.c', 'int.c',
   'gdt.S', 'stubs.S', 'vm.c',
-  'string.S', 'start.S',
-  'ultra.c',
+  'string.S', 'start.S', 'early_acpi.c',
+  'ultra.c', 'pic.c', 'hpet.c',
   kernel_sources,
   c_args: [ freestanding_c_args, '-std=gnu2x'],
   include_directories: [freestanding_include_dirs],

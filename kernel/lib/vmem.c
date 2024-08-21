@@ -311,6 +311,7 @@ void *vmem_add(Vmem *vmp, void *addr, size_t size, int vmflag)
 void *vmem_xalloc(Vmem *vmp, size_t size, size_t align, size_t phase,
 		  size_t nocross, void *minaddr, void *maxaddr, int vmflag)
 {
+	assert(vmp);
 	irql_t irql = spinlock_acquire(&vmp->lock, HIGH_LEVEL);
 	VmemSegList *first_list = freelist_for_size(vmp, size),
 		    *end = &vmp->freelist[FREELISTS_N], *list = NULL;
