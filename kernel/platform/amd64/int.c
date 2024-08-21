@@ -144,8 +144,11 @@ void handle_fault(cpu_state_t *frame, int number)
 	}
 }
 
+extern void apic_eoi();
+
 void handle_irq(cpu_state_t *frame, int number)
 {
+	apic_eoi();
 	if (number == 0xFF) {
 		printk("got spurious IRQ\n");
 		return;

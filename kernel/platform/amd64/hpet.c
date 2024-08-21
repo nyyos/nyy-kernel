@@ -63,9 +63,11 @@ clocksource_t hpet_clocksource = {
 	.current_nanos = hpet_current_nanos,
 };
 
-void hpet_init()
+int hpet_init()
 {
 	struct acpi_hpet *hpet_table = acpi_early_find("HPET");
+	if (!hpet_table)
+		return 1;
 
 	memset(&g_hpet, 0x0, sizeof(hpet_t));
 	g_hpet.addr = (uintptr_t)vm_map_allocate(vm_kmap(), PAGE_SIZE);
@@ -78,4 +80,5 @@ void hpet_init()
 
 	hpet_enable();
 	register_clocksource(&hpet_clocksource);
+	return 0;
 }

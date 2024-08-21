@@ -18,8 +18,6 @@ static TAILQ_HEAD(console_list,
 		  console) console_list = TAILQ_HEAD_INITIALIZER(console_list);
 static spinlock_t console_list_lock = SPINLOCK_INITIALIZER();
 
-spinlock_t printk_lock = SPINLOCK_INITIALIZER();
-
 #define LOG_DEBUG "[ \x1b[35mDEBUG \x1b[0m] "
 #define LOG_INFO "[ \x1b[32mINFO  \x1b[0m] "
 #define LOG_WARN "[ \x1b[33mWARN  \x1b[0m] "

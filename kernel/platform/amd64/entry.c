@@ -1,3 +1,4 @@
+#include "ndk/time.h"
 #include <limine.h>
 
 #include <nyyconf.h>
@@ -6,6 +7,7 @@
 #include <dkit/console.h>
 
 #include "asm.h"
+#include "apic.h"
 #include "gdt.h"
 #include "idt.h"
 #include "early_acpi.h"
@@ -131,6 +133,8 @@ void port_smp_entry(struct limine_smp_info *info)
 
 	vm_port_activate(vm_kmap());
 
+	apic_enable();
+
 	// XXX: make this the idle thread of the cpu
 	printk(INFO "entered kernel on core %d\n", info->lapic_id);
 
@@ -150,5 +154,8 @@ LIMINE_REQ static volatile struct limine_rsdp_request rsdp_request = {
 void port_scheduler_init()
 {
 	acpi_early_set_rsdp(rsdp_request.response->address);
-	hpet_init();
+	assert(hpet_init() == 0);
+	// init fallback clocks before apic_init
+	apic_init();
+	apic_enable();
 }

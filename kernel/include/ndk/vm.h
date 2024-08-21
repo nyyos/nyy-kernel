@@ -55,7 +55,7 @@ enum cachemode {
 struct region;
 
 typedef struct page {
-	uint64_t pfn;
+	uint64_t pfn : 52;
 	short usage;
 } page_t;
 

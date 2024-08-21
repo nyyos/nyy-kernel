@@ -14,6 +14,8 @@ typedef struct cpudata_port {
 	struct cpudata_port *self;
 
 	uint64_t lapic_id;
+	uint64_t lapic_ticks_per_ms;
+	bool lapic_calibrated;
 } cpudata_port_t;
 
 [[gnu::noreturn]] static inline void hcf()

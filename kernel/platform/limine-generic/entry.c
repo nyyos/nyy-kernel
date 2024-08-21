@@ -1,16 +1,17 @@
 #include <backends/fb.h>
-#include <dkit/console.h>
+#include <string.h>
 #include <flanterm.h>
+#include <limine.h>
 #include <ndk/addr.h>
 #include <ndk/internal/boot.h>
 #include <ndk/internal/symbol.h>
 #include <ndk/vm.h>
-#include <limine.h>
 #include <ndk/kmem.h>
-#include <nyyconf.h>
 #include <ndk/ndk.h>
+#include <ndk/time.h>
 #include <ndk/cpudata.h>
-#include <string.h>
+#include <nyyconf.h>
+#include <dkit/console.h>
 #include <limine-generic.h>
 
 #define LIMINE_REQ __attribute__((used, section(".requests")))
@@ -174,6 +175,14 @@ static void consume_modules()
 	}
 }
 
+void callback_test(void *unused)
+{
+	(void)unused;
+	printk(WARN "TIMER FIRED\n");
+}
+
+extern void apic_arm(uint64_t);
+
 void limine_entry(void)
 {
 	REAL_HHDM_START = PADDR(hhdm_request.response->offset);
@@ -202,7 +211,15 @@ void limine_entry(void)
 
 	kmem_init();
 	consume_modules();
+	time_init();
 	port_scheduler_init();
+
+	timer_t *tp = timer_create(NULL,
+				   clocksource()->current_nanos() + MS2NS(1000),
+				   callback_test, NULL);
+	timer_install(gp_engine(), tp);
+
+	asm volatile("sti; hlt; cli");
 
 #ifdef CONFIG_SMP
 	start_cores();
