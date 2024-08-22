@@ -1,4 +1,5 @@
 #define NANOPRINTF_IMPLEMENTATION
+#define NANOPRINTF_VISIBILITY_STATIC
 #define NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS 1
 #define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
 #define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 0
@@ -7,11 +8,11 @@
 #define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
 #include <nanoprintf.h>
 
-#include <ndk/ndk.h>
-#include <dkit/console.h>
-#include <sys/queue.h>
 #include <stdarg.h>
 #include <string.h>
+#include <sys/queue.h>
+#include <ndk/ndk.h>
+#include <dkit/console.h>
 
 // XXX: maybe move this out from here...
 static TAILQ_HEAD(console_list,
