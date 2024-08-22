@@ -1,4 +1,3 @@
-#include "ndk/util.h"
 #include <ndk/ndk.h>
 #include <ndk/port.h>
 #include <ndk/vm.h>
@@ -98,7 +97,7 @@ static region_t *find_buddy_region(size_t size, irql_t *old)
 	TAILQ_FOREACH(elm, &regionlist, entry)
 	{
 		buddy = elm->buddy;
-		*old = spinlock_acquire(&elm->buddy_lock, HIGH_LEVEL);
+		*old = spinlock_acquire(&elm->buddy_lock, IRQL_HIGH);
 		if (buddy_arena_free_size(buddy) < size) {
 			spinlock_release(&elm->buddy_lock, *old);
 			continue;
@@ -165,7 +164,7 @@ page_t *pm_lookup(paddr_t paddr)
 void pm_free_n(page_t *pages, size_t n)
 {
 	region_t *region = pm_lookup_region(PG2P(pages));
-	irql_t irql = spinlock_acquire(&region->buddy_lock, HIGH_LEVEL);
+	irql_t irql = spinlock_acquire(&region->buddy_lock, IRQL_HIGH);
 	buddy_safe_free(region->buddy, (void *)PG2P(pages).addr, n * PAGE_SIZE);
 	__atomic_fetch_sub(&vmstat.used, n, __ATOMIC_RELAXED);
 	spinlock_release(&region->buddy_lock, irql);

@@ -1,9 +1,9 @@
+#include <string.h>
+#include <heap.h>
 #include <ndk/time.h>
 #include <ndk/ndk.h>
 #include <ndk/port.h>
 #include <ndk/kmem.h>
-#include <string.h>
-#include <heap.h>
 
 static kmem_cache_t *g_timer_cache;
 
@@ -63,7 +63,7 @@ void timer_destroy(timer_t *tp)
 	irql_t irql;
 
 	if (tp->engine != NULL)
-		irql = spinlock_acquire(&tp->engine->lock, HIGH_LEVEL);
+		irql = spinlock_acquire(&tp->engine->lock, IRQL_HIGH);
 
 	assert(tp->timer_state == kTimerUnused ||
 	       tp->timer_state == kTimerFired);
@@ -105,7 +105,7 @@ static void time_engine_progress(timer_engine_t *ep)
 void timer_uninstall(timer_t *tp)
 {
 	timer_engine_t *ep = tp->engine;
-	irql_t irql = spinlock_acquire(&ep->lock, HIGH_LEVEL);
+	irql_t irql = spinlock_acquire(&ep->lock, IRQL_HIGH);
 	tp->engine = NULL;
 	if (tp->timer_state == kTimerQueued)
 		tp->timer_state = kTimerCanceled;
@@ -120,7 +120,7 @@ void timer_install(timer_engine_t *ep, timer_t *tp)
 {
 	assert(ep);
 	assert(tp->timer_state != kTimerQueued);
-	irql_t irql = spinlock_acquire(&ep->lock, HIGH_LEVEL);
+	irql_t irql = spinlock_acquire(&ep->lock, IRQL_HIGH);
 	tp->engine = ep;
 	tp->timer_state = kTimerQueued;
 	HEAP_INSERT(timerlist, &ep->timerlist, tp);
@@ -131,7 +131,7 @@ void timer_install(timer_engine_t *ep, timer_t *tp)
 void time_engine_update(timer_engine_t *ep)
 {
 	assert(ep);
-	irql_t irql = spinlock_acquire(&ep->lock, HIGH_LEVEL);
+	irql_t irql = spinlock_acquire(&ep->lock, IRQL_HIGH);
 	time_engine_progress(ep);
 	spinlock_release(&ep->lock, irql);
 }

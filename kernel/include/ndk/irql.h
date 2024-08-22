@@ -2,16 +2,10 @@
 
 #include <sys/queue.h>
 #include <stddef.h>
+#include <stdint.h>
+#include <ndk/port.h>
 
-typedef unsigned int irql_t;
-
-enum IRQL_LEVELS {
-	PASSIVE_LEVEL = 0,
-	APC_LEVEL = 1,
-	DPC_LEVEL = 2,
-	CLOCK_LEVEL = 14,
-	HIGH_LEVEL = 15,
-};
+typedef uint8_t irql_t;
 
 typedef struct dpc {
 	TAILQ_ENTRY(dpc) queue_entry;

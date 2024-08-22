@@ -105,7 +105,7 @@ void _printk_consoles_write(const char *buf, size_t size)
 	{
 		if (!elm->write)
 			continue;
-		irql_t irql = spinlock_acquire(&elm->spinlock, HIGH_LEVEL);
+		irql_t irql = spinlock_acquire(&elm->spinlock, IRQL_HIGH);
 		elm->write(elm, buf, size);
 		spinlock_release(&elm->spinlock, irql);
 	}
@@ -170,7 +170,7 @@ static void _printk_buffer_write(logbuffer_t *lb)
 
 void console_add(console_t *console)
 {
-	irql_t irql = spinlock_acquire(&console_list_lock, HIGH_LEVEL);
+	irql_t irql = spinlock_acquire(&console_list_lock, IRQL_HIGH);
 	SPINLOCK_INIT(&console->spinlock);
 	// TODO: print old messages
 	TAILQ_INSERT_TAIL(&console_list, console, queue_entry);
@@ -179,8 +179,8 @@ void console_add(console_t *console)
 
 void console_remove(console_t *console)
 {
-	irql_t irql = spinlock_acquire(&console_list_lock, HIGH_LEVEL);
-	spinlock_acquire(&console->spinlock, HIGH_LEVEL);
+	irql_t irql = spinlock_acquire(&console_list_lock, IRQL_HIGH);
+	spinlock_acquire(&console->spinlock, IRQL_HIGH);
 	TAILQ_REMOVE(&console_list, console, queue_entry);
 	spinlock_release(&console_list_lock, irql);
 }

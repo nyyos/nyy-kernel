@@ -1,7 +1,8 @@
-#include "gdt.h"
 #include <stdint.h>
 #include <string.h>
+
 #include <ndk/ndk.h>
+#include "gdt.h"
 
 typedef struct [[gnu::packed]] gdtr {
 	uint16_t limit;
@@ -82,7 +83,7 @@ void cpu_gdt_load()
 
 void cpu_tss_load(tss_t *tss)
 {
-	irql_t old = spinlock_acquire(&g_tsslock, HIGH_LEVEL);
+	irql_t old = spinlock_acquire(&g_tsslock, IRQL_HIGH);
 	uint64_t tss_addr = (uint64_t)tss;
 	g_gdt.tss.low = (uint16_t)tss_addr;
 	g_gdt.tss.mid = (uint8_t)(tss_addr >> 16);

@@ -214,6 +214,8 @@ void limine_entry(void)
 	time_init();
 	port_scheduler_init();
 
+	assert(clocksource() && gp_engine());
+
 	timer_t *tp = timer_create(NULL,
 				   clocksource()->current_nanos() + MS2NS(1000),
 				   callback_test, NULL);
