@@ -1,8 +1,10 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
+#include <ndk/port.h>
 
-[[gnu::weak]] void *memset(void *p, int c, size_t n)
+#ifndef ARCH_HAS_MEMSET_IMPL
+void *memset(void *p, int c, size_t n)
 {
 	char *str = (char *)p;
 	for (size_t i = 0; i < n; i++) {
@@ -10,7 +12,9 @@
 	}
 	return p;
 }
+#endif
 
+#ifndef ARCH_HAS_MEMCPY_IMPL
 void *memcpy(void *dest_, const void *src_, size_t n)
 {
 	uint8_t *dest = (uint8_t *)dest_;
@@ -20,6 +24,7 @@ void *memcpy(void *dest_, const void *src_, size_t n)
 	}
 	return dest_;
 }
+#endif
 
 int memcmp(const void *s1_, const void *s2_, size_t n)
 {

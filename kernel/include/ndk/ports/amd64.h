@@ -75,3 +75,6 @@ enum IRQL_LEVELS {
 	IRQL_IPI = 14,
 	IRQL_HIGH = 15,
 };
+
+#define ARCH_HAS_MEMSET_IMPL
+#define ARCH_HAS_MEMCPY_IMPL
