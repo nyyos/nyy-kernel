@@ -8,7 +8,7 @@ config DISABLE_ASSERTS
 
 config UBSAN
   bool "Enable UBSAN"
-  default n
+  default y
 
 config STACKGUARD
   bool "Enable stack protector"

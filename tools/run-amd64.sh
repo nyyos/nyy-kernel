@@ -5,7 +5,7 @@ PORT=amd64
 qemu_args=
 iso="build-${PORT}/nyy.iso"
 
-while getopts "kngspuq:10" optchar; do
+while getopts "kngspHuq:10" optchar; do
 	case $optchar in
 	s) serial_stdio=1 ;;
 	k) qemu_args="$qemu_args -enable-kvm -cpu host" ;;
@@ -14,6 +14,7 @@ while getopts "kngspuq:10" optchar; do
 	q) QEMU_EXE=$OPTARG;;
 	g) qemu_args="$qemu_args -M smm=off -d int -D qemulog.txt" ;;
 	u) iso="build-${PORT}/nyy-${PORT}-hyper.iso" ;;
+	H) qemu_args="$qemu_args -machine hpet=off" ;;
 	*) exit 1 ;;
 	esac
 done
