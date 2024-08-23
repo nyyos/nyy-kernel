@@ -180,7 +180,7 @@ void console_add(console_t *console)
 void console_remove(console_t *console)
 {
 	irql_t irql = spinlock_acquire(&console_list_lock, IRQL_HIGH);
-	spinlock_acquire(&console->spinlock, IRQL_HIGH);
+	(void)spinlock_acquire(&console->spinlock, IRQL_HIGH);
 	TAILQ_REMOVE(&console_list, console, queue_entry);
 	spinlock_release(&console_list_lock, irql);
 }

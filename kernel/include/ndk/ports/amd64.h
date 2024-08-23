@@ -65,16 +65,37 @@ static inline void port_spin_hint()
 	asm volatile("pause");
 }
 
+static inline void port_enable_ints()
+{
+	asm volatile("sti");
+}
+
+static inline void port_disable_ints()
+{
+	asm volatile("cli");
+}
+
+static inline void port_wait_nextint()
+{
+	asm volatile("hlt");
+}
+
+#define IRQ_VECTOR_MAX (256 - 32)
+#define IRQL_VECTOR_COUNT_PER 16
 #define IRQL_COUNT 16
 
 enum IRQL_LEVELS {
 	IRQL_PASSIVE = 0,
 	IRQL_APC = 1,
 	IRQL_DISPATCH = 2,
+	IRQL_DEVICE = 3,
 	IRQL_CLOCK = 13,
 	IRQL_IPI = 14,
 	IRQL_HIGH = 15,
 };
+
+#define IRQL_TO_VECTOR(irql) (((irql) << 4) - 32)
+#define VECTOR_TO_IRQL(vec) ((vec) >> 4)
 
 #define ARCH_HAS_MEMSET_IMPL
 #define ARCH_HAS_MEMCPY_IMPL

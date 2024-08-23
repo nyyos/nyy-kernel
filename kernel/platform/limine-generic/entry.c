@@ -1,3 +1,5 @@
+#include "ndk/irq.h"
+#include "ndk/ports/amd64.h"
 #include <backends/fb.h>
 #include <string.h>
 #include <flanterm.h>
@@ -86,6 +88,14 @@ void limine_remap_mem()
 	}
 
 	printk(INFO "remapped memory\n");
+}
+
+void core_spinup()
+{
+	for (;;) {
+		port_enable_ints();
+		port_wait_nextint();
+	}
 }
 
 #ifdef CONFIG_SMP
@@ -211,21 +221,23 @@ void limine_entry(void)
 
 	kmem_init();
 	consume_modules();
+	irq_init();
+	irq_t *obj = irq_allocate_obj();
+	irq_initialize_obj_irql(obj, IRQL_DEVICE, IRQ_SHAREABLE);
+
 	time_init();
 	port_scheduler_init();
 
 	assert(clocksource() && gp_engine());
+
+#ifdef CONFIG_SMP
+	start_cores();
+#endif
 
 	timer_t *tp = timer_create(NULL,
 				   clocksource()->current_nanos() + MS2NS(1000),
 				   callback_test, NULL);
 	timer_install(gp_engine(), tp);
 
-	asm volatile("sti; hlt; cli");
-
-#ifdef CONFIG_SMP
-	start_cores();
-#endif
-
-	hcf();
+	core_spinup();
 }

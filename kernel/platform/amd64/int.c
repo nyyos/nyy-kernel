@@ -1,10 +1,12 @@
-#include "gdt.h"
-#include "idt.h"
-#include "ndk/irql.h"
+#include <stdint.h>
+#include <assert.h>
 #include <ndk/ndk.h>
 #include <ndk/port.h>
 #include <ndk/ports/amd64/util.h>
-#include <stdint.h>
+#include <ndk/irq.h>
+#include <ndk/irql.h>
+#include "gdt.h"
+#include "idt.h"
 
 #if defined(AMD64)
 // 64 bit idt
@@ -56,7 +58,7 @@ typedef struct [[gnu::packed]] idtr {
 #endif
 
 [[gnu::aligned(0x10)]] static idt_entry_t g_idt[256];
-
+static irq_handler_fn_t irq_handlers[256];
 extern uint64_t itable[256];
 
 void cpu_idt_init()
@@ -146,14 +148,25 @@ void handle_fault(cpu_state_t *frame, int number)
 
 extern void apic_eoi();
 
+int port_register_isr(vector_t vec, irq_handler_fn_t handler_fn)
+{
+	if (irq_handlers[vec + 32] && handler_fn)
+		return 1;
+	irq_handlers[vec + 32] = handler_fn;
+	return 0;
+}
+
 void handle_irq(cpu_state_t *frame, int number)
 {
+	irql_t irql = irql_current();
+	asm volatile("sti");
+
 	apic_eoi();
-	if (number == 0xFF) {
-		printk("got spurious IRQ\n");
-		return;
-	}
-	printk("got irq %d\n", number);
+	assert(irq_handlers[number]);
+	irq_handlers[number](frame, number - 32);
+
+	asm volatile("cli");
+	irql_set(irql);
 }
 
 irql_t irql_current()

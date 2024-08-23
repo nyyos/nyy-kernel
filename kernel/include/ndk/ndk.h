@@ -71,7 +71,8 @@ static inline void spinlock_release(spinlock_t *spinlock, irql_t to)
 	irql_lower(to);
 }
 
-static inline irql_t spinlock_acquire(spinlock_t *spinlock, irql_t at)
+[[nodiscard]] static inline irql_t spinlock_acquire(spinlock_t *spinlock,
+						    irql_t at)
 {
 	irql_t old = irql_raise(at);
 	spinlock_acquire_no_irql(spinlock);

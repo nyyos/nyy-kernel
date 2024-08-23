@@ -1,3 +1,4 @@
-kernel_sources += [
-  files('irql.c')
-]
+kernel_sources += files(
+  'irql.c',
+  'irq.c'
+)

@@ -123,6 +123,8 @@ void port_data_common_init(cpudata_t *data)
 	port_init_cpu();
 }
 
+extern void core_spinup();
+
 void port_smp_entry(struct limine_smp_info *info)
 {
 	struct smp_info *nyy_info = (struct smp_info *)info->extra_argument;
@@ -141,7 +143,7 @@ void port_smp_entry(struct limine_smp_info *info)
 	bool ready = true;
 	__atomic_store(&nyy_info->ready, &ready, __ATOMIC_RELEASE);
 
-	hcf();
+	core_spinup();
 }
 
 #define LIMINE_REQ __attribute__((used, section(".requests")))

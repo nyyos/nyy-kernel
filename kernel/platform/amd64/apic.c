@@ -1,3 +1,4 @@
+#include "ndk/irq.h"
 #include <stdint.h>
 #include <assert.h>
 #include <string.h>
@@ -44,6 +45,7 @@ enum {
 
 typedef struct apic {
 	vaddr_t virt_base;
+	irq_t *timer_irq;
 } apic_t;
 
 static apic_t g_apic;
@@ -109,8 +111,7 @@ static void apic_timer_calibrate()
 void apic_enable()
 {
 	// mask everything
-	// apic_write(APIC_REG_LVT_TIMER, (1 << 16));
-	apic_write(APIC_REG_LVT_TIMER, 0xFF);
+	apic_write(APIC_REG_LVT_TIMER, g_apic.timer_irq->vector->vector + 32);
 	apic_write(APIC_REG_LVT_ERROR, (1 << 16));
 	apic_write(APIC_REG_LVT_LINT0, (1 << 16));
 	apic_write(APIC_REG_LVT_LINT1, (1 << 16));
@@ -145,6 +146,16 @@ void apic_arm(uint64_t deadline)
 
 timer_engine_t apic_timer_engine;
 
+int timer_handler(irq_t *obj, cpu_state_t *frame, void *private)
+{
+	(void)obj;
+	(void)frame;
+	(void)private;
+	printk("in timer handler\n");
+	time_engine_update(&apic_timer_engine);
+	return kIrqAck;
+}
+
 void apic_init()
 {
 	memset(&g_apic, 0x0, sizeof(apic_t));
@@ -154,6 +165,10 @@ void apic_init()
 		    kVmRead | kVmWrite);
 
 	pic_disable();
+
+	g_apic.timer_irq = irq_allocate_obj();
+	irq_initialize_obj_irql(g_apic.timer_irq, IRQL_CLOCK, IRQ_FORCE);
+	g_apic.timer_irq->handler = timer_handler;
 
 	time_engine_init(&apic_timer_engine, clocksource(), apic_arm);
 	set_gp_engine(&apic_timer_engine);
