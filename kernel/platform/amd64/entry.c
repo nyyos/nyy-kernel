@@ -1,9 +1,9 @@
-#include "ndk/time.h"
 #include <limine.h>
 
 #include <nyyconf.h>
 #include <limine-generic.h>
 #include <ndk/vm.h>
+#include <ndk/time.h>
 #include <dkit/console.h>
 
 #include "asm.h"
