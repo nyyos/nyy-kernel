@@ -4,7 +4,7 @@ PORT=amd64
 
 LIMINE=vendor/limine
 ISOROOT=build-${PORT}/isoroot
-ISO=build-${PORT}/nyy.iso
+ISO=build-${PORT}/nyy-${PORT}-limine.iso
 
 mkdir -p "${ISOROOT}" &&
 	cp build-${PORT}/kernel/platform/amd64/symbols.map build-${PORT}/kernel/platform/amd64/nyy ${LIMINE}/limine-bios.sys ${LIMINE}/limine-bios-cd.bin ${LIMINE}/limine-uefi-cd.bin "${ISOROOT}" &&

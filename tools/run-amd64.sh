@@ -3,7 +3,7 @@
 PORT=amd64
 
 qemu_args=
-iso="build-${PORT}/nyy.iso"
+iso="build-${PORT}/nyy-amd64-limine.iso"
 
 while getopts "kngspHuq:10" optchar; do
 	case $optchar in
