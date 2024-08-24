@@ -1,5 +1,4 @@
-#include "ndk/irq.h"
-#include "ndk/ports/amd64.h"
+#include "ndk/irql.h"
 #include <backends/fb.h>
 #include <string.h>
 #include <flanterm.h>
@@ -8,6 +7,7 @@
 #include <ndk/internal/boot.h>
 #include <ndk/internal/symbol.h>
 #include <ndk/vm.h>
+#include <ndk/irq.h>
 #include <ndk/kmem.h>
 #include <ndk/ndk.h>
 #include <ndk/time.h>
@@ -185,17 +185,23 @@ static void consume_modules()
 	}
 }
 
-void callback_test(void *unused)
+void callback_test(void *private)
 {
-	(void)unused;
+	static int i = 0;
+	if (++i == 5) {
+		timer_uninstall(private, kTimerEngineLockHeld);
+	}
 	printk(WARN "TIMER FIRED\n");
 }
-
-extern void apic_arm(uint64_t);
 
 void limine_entry(void)
 {
 	REAL_HHDM_START = PADDR(hhdm_request.response->offset);
+
+	port_init_bsp(&bsp_data);
+	port_data_common_init(&bsp_data);
+	cpudata()->bsp = true;
+
 	_printk_init();
 	_port_init_boot_consoles();
 	early_fb_init();
@@ -203,9 +209,6 @@ void limine_entry(void)
 	printk(INFO "Nyy//limine " ARCHNAME " (Built on: " __DATE__ " " __TIME__
 		    ")\n");
 
-	port_init_bsp(&bsp_data);
-	port_data_common_init(&bsp_data);
-	cpudata()->bsp = true;
 	struct limine_memmap_entry **entries = memmap_request.response->entries;
 	for (size_t i = 0; i < memmap_request.response->entry_count; i++) {
 		struct limine_memmap_entry *entry = entries[i];
@@ -222,8 +225,6 @@ void limine_entry(void)
 	kmem_init();
 	consume_modules();
 	irq_init();
-	irq_t *obj = irq_allocate_obj();
-	irq_initialize_obj_irql(obj, IRQL_DEVICE, IRQ_SHAREABLE);
 
 	time_init();
 	port_scheduler_init();
@@ -234,9 +235,8 @@ void limine_entry(void)
 	start_cores();
 #endif
 
-	timer_t *tp = timer_create(NULL,
-				   clocksource()->current_nanos() + MS2NS(1000),
-				   callback_test, NULL);
+	timer_t *tp = timer_allocate();
+	timer_set(tp, MS2NS(1000), callback_test, tp, kTimerPeriodicMode);
 	timer_install(gp_engine(), tp);
 
 	core_spinup();

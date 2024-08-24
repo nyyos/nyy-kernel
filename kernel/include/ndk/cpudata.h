@@ -1,10 +1,14 @@
 #pragma once
 
+#include <stdint.h>
 #include <ndk/port.h>
 #include <ndk/util.h>
+#include <ndk/dpc.h>
 
 typedef struct cpudata {
 	cpudata_port_t port_data;
+	uint64_t softint_pending;
+	dpc_queue_t dpc_queue;
 	bool bsp;
 } cpudata_t;
 

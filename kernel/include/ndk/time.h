@@ -22,6 +22,10 @@ typedef struct clocksource {
 
 typedef struct timer_engine timer_engine_t;
 
+enum timer_management_flags {
+	kTimerEngineLockHeld = (1 << 1),
+};
+
 enum timer_state {
 	kTimerUnused = 0,
 	kTimerFired,
@@ -29,12 +33,20 @@ enum timer_state {
 	kTimerCanceled
 };
 
+enum timer_mode {
+	kTimerOneshotMode = 0,
+	kTimerPeriodicMode,
+};
+
 typedef struct timer {
 	void (*callback)(void *private);
 	void *private;
 
 	uint64_t deadline;
+	uint64_t interval; // used by periodic mode
 	short timer_state;
+
+	int mode;
 
 	timer_engine_t *engine;
 	HEAP_ENTRY(timer) entry;
@@ -64,9 +76,11 @@ timer_engine_t *gp_engine();
 void set_gp_engine(timer_engine_t *ep);
 
 void timer_install(timer_engine_t *ep, timer_t *tp);
-void timer_uninstall(timer_t *tp);
+void timer_uninstall(timer_t *tp, int flags);
 void time_engine_update(timer_engine_t *ep);
-void timer_destroy(timer_t *tp);
 
-timer_t *timer_create(timer_t *tp, uint64_t deadline, void (*callback)(void *),
-		      void *private);
+timer_t *timer_allocate();
+void timer_free(timer_t *timer);
+
+void timer_set(timer_t *tp, uint64_t deadline, void (*callback)(void *),
+	       void *private, int mode);

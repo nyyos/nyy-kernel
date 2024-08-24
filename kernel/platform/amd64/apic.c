@@ -126,7 +126,7 @@ void apic_enable()
 	apic_timer_calibrate();
 }
 
-void apic_send_ipi(uint32_t lapic_id, uint8_t vector)
+void apic_send_ipi(uint32_t lapic_id, vector_t vector)
 {
 	apic_write(APIC_REG_ICR1, lapic_id << 24);
 	apic_write(APIC_REG_ICR0, vector);
