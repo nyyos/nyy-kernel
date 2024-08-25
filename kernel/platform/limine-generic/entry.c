@@ -118,7 +118,7 @@ static void start_cores()
 		cpu->goto_address = port_smp_entry;
 	}
 	// synchronize all cores being up
-	for (size_t i = 0; i < res->cpu_count; i++) {
+	for (size_t i = 0; i < MAX_CORES && i < res->cpu_count; i++) {
 		struct limine_smp_info *cpu = res->cpus[i];
 		if (cpu->lapic_id == 0)
 			continue;

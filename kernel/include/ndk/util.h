@@ -23,3 +23,17 @@
 
 // beware: 0 is incorrectly considered a power of two by this
 #define P2CHECK(v) (((v) & ((v) - 1)) == 0)
+
+#define MAX(a, b)                       \
+	({                              \
+		__typeof__(a) _a = (a); \
+		__typeof__(b) _b = (b); \
+		_a > _b ? _a : _b;      \
+	})
+
+#define MIN(a, b)                       \
+	({                              \
+		__typeof__(a) _a = (a); \
+		__typeof__(b) _b = (b); \
+		_a < _b ? _a : _b;      \
+	})

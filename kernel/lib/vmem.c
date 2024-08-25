@@ -50,9 +50,6 @@ void *vmem_alloc_pages(size_t n)
 
 #define VMEM_ALIGNUP(addr, align) (((addr) + (align) - 1) & ~((align) - 1))
 
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
-#define MAX(a, b) (((a) > (b)) ? (a) : (b))
-
 /* We need to keep a global freelist of segments because allocating virtual memory (e.g allocating a segment) requires segments to describe it. (kernel only)
  In non-kernel code, this is handled by the host `malloc` and `free` standard library functions */
 static VmemSegment static_segs[128];
