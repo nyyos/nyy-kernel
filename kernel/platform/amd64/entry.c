@@ -6,12 +6,15 @@
 #include <ndk/time.h>
 #include <dkit/console.h>
 
+#include "cpuid.h"
 #include "asm.h"
 #include "apic.h"
 #include "gdt.h"
 #include "idt.h"
 #include "early_acpi.h"
 #include "hpet.h"
+
+cpu_features_t g_features;
 
 #define COM1 0x3f8
 
@@ -70,6 +73,15 @@ void port_init_bsp(cpudata_t *bsp_data)
 {
 	cpu_gdt_init();
 	cpu_idt_init();
+
+	uint32_t a, b, c, d;
+	cpuid(0x80000001, &a, &b, &c, &d);
+	g_features.nx = (d >> 20) & 1;
+	g_features.gbpages = (d >> 26) & 1;
+	cpuid(1, &a, &b, &c, &d);
+	g_features.pge = (d >> 13) & 1;
+	g_features.pat = (d >> 16) & 1;
+	g_features.pcid = (c >> 17) & 1;
 }
 
 void port_pat_setup()
@@ -110,7 +122,8 @@ static void port_init_cpu()
 	// TODO: PCID?
 	write_cr4(read_cr4() | (1 << 4) | (1 << 7));
 	// enable NX
-	wrmsr(kMsrEfer, rdmsr(kMsrEfer) | (1 << 11));
+	if (g_features.nx)
+		wrmsr(kMsrEfer, rdmsr(kMsrEfer) | (1 << 11));
 }
 
 void port_data_common_init(cpudata_t *data)
@@ -160,4 +173,8 @@ void port_scheduler_init()
 	// init fallback clocks before apic_init
 	apic_init();
 	apic_enable();
+
+	char vendor[13];
+	cpuid_vendor(vendor);
+	printk(DEBUG "CPU vendor: %s\n", vendor);
 }

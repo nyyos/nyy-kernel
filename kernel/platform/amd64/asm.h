@@ -58,3 +58,11 @@ FN_CR(2);
 FN_CR(3);
 FN_CR(4);
 FN_CR(8);
+
+static inline void cpuid(int code, uint32_t *eax, uint32_t *ebx, uint32_t *ecx,
+			 uint32_t *edx)
+{
+	asm volatile("cpuid"
+		     : "=a"(*eax), "=b"(*ebx), "=c"(*ecx), "=d"(*edx)
+		     : "a"(code));
+}

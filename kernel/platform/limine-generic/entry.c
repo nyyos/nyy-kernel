@@ -1,4 +1,4 @@
-#include "ndk/irql.h"
+#include "cpuid.h"
 #include <backends/fb.h>
 #include <string.h>
 #include <flanterm.h>
@@ -205,6 +205,14 @@ void limine_entry(void)
 	_printk_init();
 	_port_init_boot_consoles();
 	early_fb_init();
+
+	assert(g_features.pat == 1);
+
+	printk("cpu 1gb pages:%d\n", g_features.gbpages);
+	printk("cpu nx:%d\n", g_features.nx);
+	printk("cpu pge:%d\n", g_features.pge);
+	printk("cpu pat:%d\n", g_features.pat);
+	printk("cpu pcid:%d\n", g_features.pcid);
 
 	printk(INFO "Nyy//limine " ARCHNAME " (Built on: " __DATE__ " " __TIME__
 		    ")\n");

@@ -1,7 +1,9 @@
 #include <assert.h>
+#include <stdint.h>
 #include <ndk/vm.h>
 #include <ndk/ndk.h>
-#include <stdint.h>
+
+#include "cpuid.h"
 
 enum pte_masks {
 	ptePresent = 0x1,
@@ -107,6 +109,7 @@ void vm_port_unmap(vm_map_t *map, vaddr_t vaddr, uint64_t flags)
 			walk_flags |= pteFlag2MB;
 			break;
 		case 30:
+			assert(g_features.gbpages);
 			walk_flags |= pteFlag1GB;
 			break;
 		default:
@@ -133,6 +136,19 @@ void vm_port_map(vm_map_t *map, paddr_t paddr, vaddr_t vaddr, uint64_t cache,
 			break;
 		case 30:
 			assert((paddr.addr % GiB(1)) == 0);
+			if (!g_features.gbpages) {
+				printk(DEBUG "emulating gb pages\n");
+				for (int i = 0; i < 512; i++) {
+					vm_port_map(
+						map,
+						PADDR(paddr.addr + MiB(2) * i),
+						VADDR(vaddr.addr + MiB(2) * i),
+						cache,
+						(flags & ~(kVmHuge1GB)) |
+							kVmHuge2MB);
+				}
+				return;
+			}
 			walk_flags |= pteFlag1GB;
 			break;
 		default:
@@ -149,9 +165,11 @@ void vm_port_map(vm_map_t *map, paddr_t paddr, vaddr_t vaddr, uint64_t cache,
 		new_entry |= pteWrite;
 	if (flags & kVmRead)
 		new_entry |= ptePresent;
-	if (flags & kVmGlobal)
+
+	if (g_features.pge && (flags & kVmGlobal))
 		new_entry |= pteGlobal;
-	if (!(flags & kVmExecute))
+
+	if (g_features.nx && !(flags & kVmExecute))
 		new_entry |= pteNoExecute;
 
 	switch (cache) {
