@@ -13,7 +13,7 @@
 #define KMEM_MAXPAGES 8
 
 #ifndef __KERNEL__
-#define printk printf
+#ifndef NYYLINUX
 void *vm_kalloc(size_t count, int flags)
 {
 	(void)flags;
@@ -26,6 +26,7 @@ void vm_kfree(void *addr, size_t count)
 {
 	free(addr);
 }
+#endif
 #endif
 
 static kmem_cache_t *slab_cache;

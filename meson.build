@@ -134,6 +134,7 @@ if(use_limine)
   )
 endif
 
-
-subdir('freestanding')
+if (target_is_freestanding)
+  subdir('freestanding')
+endif
 subdir('kernel')

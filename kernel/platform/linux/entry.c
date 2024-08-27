@@ -10,6 +10,7 @@
 #include "ndk/ndk.h"
 #include "ndk/irql.h"
 #include "ndk/util.h"
+#include "dkit/console.h"
 #include "ndk/vm.h"
 
 // basically the number of threads spawned
@@ -25,9 +26,16 @@ size_t PAGE_SIZE;
 static cpudata_t g_cpudatas[LINUX_KCPU_COUNT];
 static __thread cpudata_port_t *t_cpudata;
 
-void pac_putc(int ch, void *)
+void linux_stdio_putc(int ch)
 {
 	putc_unlocked(ch, stdout);
+}
+
+void linux_stdio_write(console_t *, const char *msg, size_t size)
+{
+	for (size_t i = 0; i < size; i++) {
+		linux_stdio_putc(msg[i]);
+	}
 }
 
 void cpudata_port_setup(cpudata_port_t *cpudata)
@@ -50,7 +58,6 @@ irql_t irql_current()
 
 int main()
 {
-	SPINLOCK_INIT(&g_pac_lock);
 	PAGE_SIZE = getpagesize();
 
 	cpudata_setup(&g_cpudatas[0]);
