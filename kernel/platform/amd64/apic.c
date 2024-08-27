@@ -134,12 +134,25 @@ void apic_send_ipi(uint32_t lapic_id, vector_t vector)
 
 void apic_arm(uint64_t deadline)
 {
+	// i stole this from managram
+	if (deadline == 0) {
+		apic_write(APIC_REG_TIMER_INITIAL, 0);
+		return;
+	}
 	uint64_t ticks;
 	uint64_t now = clocksource()->current_nanos();
-	if (deadline < now || (deadline - now) <= MS2NS(1))
+	if (deadline < now) {
 		ticks = 1;
-
-	ticks = NS2MS(deadline - now) * cpudata()->port_data.lapic_ticks_per_ms;
+	} else {
+		bool of = __builtin_mul_overflow(
+			(deadline - now),
+			cpudata()->port_data.lapic_ticks_per_ms, &ticks);
+		assert(!of);
+		ticks /= 1000000;
+		if (!ticks) {
+			ticks = 1;
+		}
+	}
 
 	apic_write(APIC_REG_TIMER_INITIAL, ticks);
 }
@@ -151,7 +164,6 @@ int timer_handler(irq_t *obj, cpu_state_t *frame, void *private)
 	(void)obj;
 	(void)frame;
 	(void)private;
-	printk("in timer handler\n");
 	time_engine_update(&apic_timer_engine);
 	return kIrqAck;
 }

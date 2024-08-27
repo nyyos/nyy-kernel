@@ -4,7 +4,6 @@
 #include <ndk/ndk.h>
 #include <ndk/port.h>
 #include <ndk/kmem.h>
-#include <ndk/dpc.h>
 
 static kmem_cache_t *g_timer_cache;
 
@@ -55,7 +54,7 @@ void timer_free(timer_t *tp)
 	irql_t irql;
 
 	if (tp->engine != NULL)
-		irql = spinlock_acquire(&tp->engine->lock, IRQL_HIGH);
+		irql = spinlock_acquire(&tp->engine->lock, IRQL_CLOCK);
 
 	assert(tp->timer_state == kTimerQueued &&
 		       tp->mode == kTimerPeriodicMode ||
@@ -132,7 +131,7 @@ void timer_uninstall(timer_t *tp, int flags)
 		return;
 	}
 	timer_engine_t *ep = tp->engine;
-	irql_t irql = spinlock_acquire(&ep->lock, IRQL_HIGH);
+	irql_t irql = spinlock_acquire(&ep->lock, IRQL_CLOCK);
 	tp->engine = NULL;
 	if (tp->timer_state == kTimerQueued)
 		tp->timer_state = kTimerCanceled;
@@ -147,7 +146,7 @@ void timer_install(timer_engine_t *ep, timer_t *tp)
 {
 	assert(ep);
 	assert(tp->timer_state != kTimerQueued);
-	irql_t irql = spinlock_acquire(&ep->lock, IRQL_HIGH);
+	irql_t irql = spinlock_acquire(&ep->lock, IRQL_CLOCK);
 	tp->engine = ep;
 	tp->timer_state = kTimerQueued;
 	if (tp->mode == kTimerPeriodicMode)
@@ -160,11 +159,11 @@ void timer_install(timer_engine_t *ep, timer_t *tp)
 void time_engine_update(timer_engine_t *ep)
 {
 	assert(ep);
-	printk("update ep lock\n");
-	irql_t irql = spinlock_acquire(&ep->lock, IRQL_HIGH);
+	irql_t irql = spinlock_acquire(&ep->lock, IRQL_CLOCK);
+	//printk("update ep lock\n");
 	time_engine_progress(ep);
 	spinlock_release(&ep->lock, irql);
-	printk("update ep unlock\n");
+	//printk("update ep unlock\n");
 }
 
 void time_engine_init(timer_engine_t *ep, clocksource_t *csp,

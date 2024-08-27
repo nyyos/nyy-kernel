@@ -92,6 +92,7 @@ void limine_remap_mem()
 
 void core_spinup()
 {
+	irql_lower(IRQL_PASSIVE);
 	for (;;) {
 		port_enable_ints();
 		port_wait_nextint();
@@ -185,13 +186,20 @@ static void consume_modules()
 	}
 }
 
+struct ctx {
+	timer_t *timer;
+	int i;
+};
+
 void callback_test(void *private)
 {
-	static int i = 0;
-	if (++i == 5) {
-		timer_uninstall(private, kTimerEngineLockHeld);
+	struct ctx *ctx = private;
+	printk(WARN "TIMER FIRED (%i:%p)\n", ctx->i + 1, ctx->timer);
+	if (++ctx->i == 5) {
+		timer_uninstall(ctx->timer, kTimerEngineLockHeld);
+		timer_free(ctx->timer);
+		kfree(ctx, sizeof(struct ctx));
 	}
-	printk(WARN "TIMER FIRED\n");
 }
 
 void limine_entry(void)
@@ -243,8 +251,19 @@ void limine_entry(void)
 	start_cores();
 #endif
 
+	struct ctx *ctx;
+	ctx = kmalloc(sizeof(struct ctx));
 	timer_t *tp = timer_allocate();
-	timer_set(tp, MS2NS(1000), callback_test, tp, kTimerPeriodicMode);
+	ctx->timer = tp;
+	ctx->i = 0;
+	timer_set(tp, MS2NS(100), callback_test, ctx, kTimerPeriodicMode);
+	timer_install(gp_engine(), tp);
+
+	ctx = kmalloc(sizeof(struct ctx));
+	tp = timer_allocate();
+	ctx->timer = tp;
+	ctx->i = 0;
+	timer_set(tp, MS2NS(19), callback_test, ctx, kTimerPeriodicMode);
 	timer_install(gp_engine(), tp);
 
 	core_spinup();
