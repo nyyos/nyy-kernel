@@ -186,22 +186,6 @@ static void consume_modules()
 	}
 }
 
-struct ctx {
-	timer_t *timer;
-	int i;
-};
-
-void callback_test(void *private)
-{
-	struct ctx *ctx = private;
-	printk(WARN "TIMER FIRED (%i:%p)\n", ctx->i + 1, ctx->timer);
-	if (++ctx->i == 5) {
-		timer_uninstall(ctx->timer, kTimerEngineLockHeld);
-		timer_free(ctx->timer);
-		kfree(ctx, sizeof(struct ctx));
-	}
-}
-
 void limine_entry(void)
 {
 	REAL_HHDM_START = PADDR(hhdm_request.response->offset);
@@ -216,11 +200,11 @@ void limine_entry(void)
 
 	assert(g_features.pat == 1);
 
-	printk("cpu 1gb pages:%d\n", g_features.gbpages);
-	printk("cpu nx:%d\n", g_features.nx);
-	printk("cpu pge:%d\n", g_features.pge);
-	printk("cpu pat:%d\n", g_features.pat);
-	printk("cpu pcid:%d\n", g_features.pcid);
+#if 0
+	printk("cpu features:\n\t1gb pages:%d\n\tNX:%d\n\tGlobal pages:%d\n\tPAT:%d\n\tPCID:%d\n",
+	       g_features.gbpages, g_features.nx, g_features.pge,
+	       g_features.pat, g_features.pcid);
+#endif
 
 	printk(INFO "Nyy//limine " ARCHNAME " (Built on: " __DATE__ " " __TIME__
 		    ")\n");
@@ -250,21 +234,6 @@ void limine_entry(void)
 #ifdef CONFIG_SMP
 	start_cores();
 #endif
-
-	struct ctx *ctx;
-	ctx = kmalloc(sizeof(struct ctx));
-	timer_t *tp = timer_allocate();
-	ctx->timer = tp;
-	ctx->i = 0;
-	timer_set(tp, MS2NS(100), callback_test, ctx, kTimerPeriodicMode);
-	timer_install(gp_engine(), tp);
-
-	ctx = kmalloc(sizeof(struct ctx));
-	tp = timer_allocate();
-	ctx->timer = tp;
-	ctx->i = 0;
-	timer_set(tp, MS2NS(19), callback_test, ctx, kTimerPeriodicMode);
-	timer_install(gp_engine(), tp);
 
 	core_spinup();
 }

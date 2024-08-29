@@ -111,7 +111,7 @@ static void apic_timer_calibrate()
 void apic_enable()
 {
 	// mask everything
-	apic_write(APIC_REG_LVT_TIMER, g_apic.timer_irq->vector->vector + 32);
+	apic_write(APIC_REG_LVT_TIMER, (1 << 16));
 	apic_write(APIC_REG_LVT_ERROR, (1 << 16));
 	apic_write(APIC_REG_LVT_LINT0, (1 << 16));
 	apic_write(APIC_REG_LVT_LINT1, (1 << 16));
@@ -124,6 +124,8 @@ void apic_enable()
 	cpudata()->port_data.lapic_id = apic_read(APIC_REG_ID);
 
 	apic_timer_calibrate();
+	apic_write(APIC_REG_LVT_TIMER, g_apic.timer_irq->vector->vector + 32);
+	apic_eoi();
 }
 
 void apic_send_ipi(uint32_t lapic_id, vector_t vector)
