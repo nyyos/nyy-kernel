@@ -12,13 +12,15 @@ autoconf_header = custom_target('gen-autoconf',
 )
 autoconf_dep = declare_dependency(sources: autoconf_header)
 
-flanterm = subproject('flanterm')
 pairing_heap = subproject('pairing_heap')
-buddy_alloc = subproject('buddy_alloc')
 uacpi = subproject('uacpi')
 uacpi_sources = uacpi.get_variable('sources')
 uacpi_includes = uacpi.get_variable('includes')
-kernel_deps = [autoconf_dep, flanterm.get_variable('flanterm_dep'), buddy_alloc.get_variable('buddy_alloc_dep'), pairing_heap.get_variable('pairing_heap_dep')]
+kernel_deps = [
+  autoconf_dep, 
+  dependency('flanterm'), 
+  dependency('pairing_heap'),
+]
 
 config_h = configure_file(
   input: 'config.template',

@@ -5,7 +5,6 @@
 #include <sys/queue.h>
 #include <assert.h>
 #include <nyyconf.h>
-#include <buddy_alloc.h>
 
 typedef struct region {
 	TAILQ_ENTRY(region) entry;
@@ -141,7 +140,6 @@ page_t *pm_lookup(paddr_t paddr)
 void pm_free_n(page_t *pages, size_t n)
 {
 	assert(n == 1);
-	region_t *region = pm_lookup_region(PG2P(pages));
 	irql_t irql = spinlock_acquire(&buddy_lock, IRQL_HIGH);
 	for (size_t i = 0; i < n; i++) {
 		pages[i].usage = kPageUseFree;
