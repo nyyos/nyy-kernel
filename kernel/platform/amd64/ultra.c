@@ -152,12 +152,13 @@ void ultra_entry(struct ultra_boot_context *ctx, uint32_t magic)
 	if (magic != ULTRA_MAGIC)
 		__builtin_trap();
 	REAL_HHDM_START = PADDR(MEM_HHDM_START);
-	_printk_init();
-	_port_init_boot_consoles();
 
 	port_init_bsp(&bsp_data);
 	port_data_common_init(&bsp_data);
 	cpudata()->bsp = true;
+
+	_printk_init();
+	_port_init_boot_consoles();
 
 	parse_ctx(ctx);
 	if (ultra_framebuffer != nullptr)
@@ -166,6 +167,7 @@ void ultra_entry(struct ultra_boot_context *ctx, uint32_t magic)
 	printk(INFO "Nyy//hyper " ARCHNAME " (Built on: " __DATE__ " " __TIME__
 		    ")\n");
 
+	pm_init();
 	size_t entry_count = ULTRA_MEMORY_MAP_ENTRY_COUNT(ultra_memmap->header);
 	for (size_t i = 0; i < entry_count; i++) {
 		struct ultra_memory_map_entry *entry =

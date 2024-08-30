@@ -32,7 +32,6 @@ void pm_init()
 
 void pm_add_region(paddr_t base, size_t length)
 {
-	irql_t irql = spinlock_acquire(&buddy_lock, IRQL_HIGH);
 	region_t *region;
 	size_t i, used;
 
@@ -42,6 +41,7 @@ void pm_add_region(paddr_t base, size_t length)
 		return;
 	}
 
+	irql_t irql = spinlock_acquire(&buddy_lock, IRQL_HIGH);
 	region = (region_t *)P2V(base).addr;
 	region->pagecnt = length / PAGE_SIZE;
 	region->base = base;

@@ -7,7 +7,7 @@ source "$(dirname "$0")/common.sh"
 PORT=amd64
 ISOROOT=build-${PORT}/isoroot-hyper
 ISO=build-${PORT}/nyy-${PORT}-hyper.iso
-HYPER_RELEASE=v0.8.0
+HYPER_RELEASE=v0.9.0
 HYPER_URL="https://github.com/UltraOS/Hyper/releases/download/${HYPER_RELEASE}"
 HYPER="build-${PORT}/hyper-${HYPER_RELEASE}"
 
