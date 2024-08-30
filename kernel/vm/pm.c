@@ -108,6 +108,11 @@ static region_t *find_buddy_region(size_t size, irql_t *old)
 	return nullptr;
 }
 
+static inline page_t *pm_lookup_with_region(paddr_t paddr, region_t *region)
+{
+	return &region->pages[(paddr.addr - region->base.addr) / PAGE_SIZE];
+}
+
 page_t *pm_allocate_n(size_t n, short usage)
 {
 	irql_t irql;
@@ -118,7 +123,7 @@ page_t *pm_allocate_n(size_t n, short usage)
 	assert(mem != nullptr);
 	__atomic_fetch_add(&vmstat.used, n, __ATOMIC_RELAXED);
 	spinlock_release(&region->buddy_lock, irql);
-	return pm_lookup(PADDR(mem));
+	return pm_lookup_with_region(PADDR(mem), region);
 }
 
 page_t *pm_allocate_n_zeroed(size_t n, short usage)
@@ -146,11 +151,6 @@ static region_t *pm_lookup_region(paddr_t paddr)
 		}
 	}
 	return nullptr;
-}
-
-static inline page_t *pm_lookup_with_region(paddr_t paddr, region_t *region)
-{
-	return &region->pages[(paddr.addr - region->base.addr) / PAGE_SIZE];
 }
 
 page_t *pm_lookup(paddr_t paddr)
