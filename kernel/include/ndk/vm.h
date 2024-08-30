@@ -57,6 +57,9 @@ struct region;
 typedef struct page {
 	uint64_t pfn : 52;
 	short usage;
+	int order;
+
+	TAILQ_ENTRY(page) queue_entry;
 } page_t;
 
 typedef struct vm_map {
@@ -70,6 +73,8 @@ typedef struct vm_map {
  * ================================
  */
 
+// initialize buddy lists
+void pm_init();
 // add a physical memory region into the pool
 void pm_add_region(paddr_t base, size_t length);
 // allocate/free functions

@@ -8,68 +8,64 @@
 #include <buddy_alloc.h>
 
 typedef struct region {
+	TAILQ_ENTRY(region) entry;
 	paddr_t base;
 	size_t pagecnt;
-
-	TAILQ_ENTRY(region) entry;
-
-	spinlock_t buddy_lock;
-	struct buddy *buddy;
-
 	page_t pages[];
 } region_t;
 
-static TAILQ_HEAD(regionlist,
-		  region) regionlist = TAILQ_HEAD_INITIALIZER(regionlist);
-static TAILQ_HEAD(pagelist, page) pagelist = TAILQ_HEAD_INITIALIZER(pagelist);
+static TAILQ_HEAD(, region) regionlist = TAILQ_HEAD_INITIALIZER(regionlist);
+
+// order 0 = PAGE_SIZE
+#define BUDDY_ORDERS 10
+static TAILQ_HEAD(, page) buddy_freelist[BUDDY_ORDERS];
+static spinlock_t buddy_lock;
 
 vmstat_t vmstat = { 0, 0 };
 paddr_t REAL_HHDM_START;
 
+void pm_init()
+{
+	for (int i = 0; i < BUDDY_ORDERS; i++) {
+		TAILQ_INIT(&buddy_freelist[i]);
+	}
+}
+
 void pm_add_region(paddr_t base, size_t length)
 {
+	irql_t irql = spinlock_acquire(&buddy_lock, IRQL_HIGH);
 	region_t *region;
 	size_t i, used;
 
 	used = PAGE_ALIGN_UP(sizeof(region_t) +
-			     buddy_sizeof_alignment(length, PAGE_SIZE) +
 			     sizeof(page_t) * length / PAGE_SIZE);
-	// XXX: is 50 reasonable?
-	if ((length - used) < (PAGE_SIZE * 50)) {
-		return;
-	}
 
 	region = (region_t *)P2V(base).addr;
 	region->pagecnt = length / PAGE_SIZE;
 	region->base = base;
 	TAILQ_INSERT_TAIL(&regionlist, region, entry);
-
-#if 0
-	printk(DEBUG "pfn part: %ldB\n",
-	       sizeof(region_t) + sizeof(page_t) * length / PAGE_SIZE);
-	printk(DEBUG "buddy part: %ldB\n",
-	  buddy_sizeof_alignment(length, PAGE_SIZE));
-#endif
-
 	vmstat.total += region->pagecnt;
 
 	for (i = 0; i < region->pagecnt; i++) {
 		region->pages[i].usage = kPageUseFree;
 		region->pages[i].pfn = (region->base.addr + i * PAGE_SIZE) >>
 				       12;
+		region->pages[i].order = 0;
 	}
 
 	for (i = 0; i < used / PAGE_SIZE; i++) {
 		region->pages[i].usage = kPageUseInternal;
 	}
+
+	for (; i < region->pagecnt; i++) {
+		page_t *page = &region->pages[i];
+		TAILQ_INSERT_TAIL(&buddy_freelist[page->order], page,
+				  queue_entry);
+	}
+
 	vmstat.used += used / PAGE_SIZE;
 
-	void *metadata = &region->pages[region->pagecnt];
-	void *arena = (void *)(base.addr + used);
-	assert(((uintptr_t)arena % PAGE_SIZE) == 0);
-
-	region->buddy =
-		buddy_init_alignment(metadata, arena, length - used, PAGE_SIZE);
+	spinlock_release(&buddy_lock, irql);
 
 	printk(DEBUG "added pm region 0x%lx (%ld/%ld pages usable)\n",
 	       base.addr, (length - used) / PAGE_SIZE, length / PAGE_SIZE);
@@ -90,24 +86,6 @@ void pm_free(page_t *page)
 	pm_free_n(page, 1);
 }
 
-static region_t *find_buddy_region(size_t size, irql_t *old)
-{
-	region_t *elm;
-	struct buddy *buddy;
-	TAILQ_FOREACH(elm, &regionlist, entry)
-	{
-		buddy = elm->buddy;
-		*old = spinlock_acquire(&elm->buddy_lock, IRQL_HIGH);
-		if (buddy_arena_free_size(buddy) < size) {
-			spinlock_release(&elm->buddy_lock, *old);
-			continue;
-		}
-		return elm;
-	}
-	panic("OOM");
-	return nullptr;
-}
-
 static inline page_t *pm_lookup_with_region(paddr_t paddr, region_t *region)
 {
 	return &region->pages[(paddr.addr - region->base.addr) / PAGE_SIZE];
@@ -115,15 +93,14 @@ static inline page_t *pm_lookup_with_region(paddr_t paddr, region_t *region)
 
 page_t *pm_allocate_n(size_t n, short usage)
 {
-	irql_t irql;
-	region_t *region = find_buddy_region(n * PAGE_SIZE, &irql);
-	if (region == nullptr)
-		return nullptr;
-	void *mem = buddy_malloc(region->buddy, n * PAGE_SIZE);
-	assert(mem != nullptr);
+	assert(n == 1);
+	irql_t irql = spinlock_acquire(&buddy_lock, IRQL_HIGH);
+	page_t *pg = TAILQ_FIRST(&buddy_freelist[0]);
+	pg->usage = usage;
+	TAILQ_REMOVE(&buddy_freelist[0], pg, queue_entry);
 	__atomic_fetch_add(&vmstat.used, n, __ATOMIC_RELAXED);
-	spinlock_release(&region->buddy_lock, irql);
-	return pm_lookup_with_region(PADDR(mem), region);
+	spinlock_release(&buddy_lock, irql);
+	return pg;
 }
 
 page_t *pm_allocate_n_zeroed(size_t n, short usage)
@@ -163,11 +140,15 @@ page_t *pm_lookup(paddr_t paddr)
 
 void pm_free_n(page_t *pages, size_t n)
 {
+	assert(n == 1);
 	region_t *region = pm_lookup_region(PG2P(pages));
-	irql_t irql = spinlock_acquire(&region->buddy_lock, IRQL_HIGH);
-	buddy_safe_free(region->buddy, (void *)PG2P(pages).addr, n * PAGE_SIZE);
+	irql_t irql = spinlock_acquire(&buddy_lock, IRQL_HIGH);
+	for (size_t i = 0; i < n; i++) {
+		pages[i].usage = kPageUseFree;
+	}
+	TAILQ_INSERT_TAIL(&buddy_freelist[0], pages, queue_entry);
 	__atomic_fetch_sub(&vmstat.used, n, __ATOMIC_RELAXED);
-	spinlock_release(&region->buddy_lock, irql);
+	spinlock_release(&buddy_lock, irql);
 }
 
 void vmstat_dump()

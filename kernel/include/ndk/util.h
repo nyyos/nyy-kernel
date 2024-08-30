@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stddef.h>
+#include <stdint.h>
 
 #define ALIGN_UP(addr, align) (((addr) + align - 1) & ~(align - 1))
 #define ALIGN_DOWN(addr, align) ((addr) & ~((align) - 1))
@@ -37,3 +38,15 @@
 		__typeof__(b) _b = (b); \
 		_a < _b ? _a : _b;      \
 	})
+
+#ifdef _LP64
+static inline int log2(uint64_t number)
+{
+	return 64 - __builtin_clzll(number);
+}
+#else
+static inline int log2(uint32_t number)
+{
+	return 32 - __builtin_clz(number);
+}
+#endif

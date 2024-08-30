@@ -1,5 +1,6 @@
 export ARCH ?= amd64
-export LANG=c
+export LC_ALL=C
+export LANG=C
 
 all:
 	@meson compile -C build-$(ARCH)
