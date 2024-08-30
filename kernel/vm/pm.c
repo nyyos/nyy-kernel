@@ -38,6 +38,9 @@ void pm_add_region(paddr_t base, size_t length)
 
 	used = PAGE_ALIGN_UP(sizeof(region_t) +
 			     sizeof(page_t) * length / PAGE_SIZE);
+	if ((length - used) < PAGE_SIZE * 2) {
+		return;
+	}
 
 	region = (region_t *)P2V(base).addr;
 	region->pagecnt = length / PAGE_SIZE;
