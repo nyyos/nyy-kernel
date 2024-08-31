@@ -8,7 +8,7 @@ ISO=build-${PORT}/nyy-${PORT}-limine.iso
 
 mkdir -p "${ISOROOT}" &&
 	cp build-${PORT}/kernel/platform/amd64/symbols.map build-${PORT}/kernel/platform/amd64/nyy ${LIMINE}/limine-bios.sys ${LIMINE}/limine-bios-cd.bin ${LIMINE}/limine-uefi-cd.bin "${ISOROOT}" &&
-	cp tools/limine-amd64.cfg "${ISOROOT}/limine.cfg" &&
+	cp tools/limine-amd64.conf "${ISOROOT}/limine.conf" &&
 	xorriso -as mkisofs -b limine-bios-cd.bin \
 		-no-emul-boot -boot-load-size 4 -boot-info-table \
 		--efi-boot limine-uefi-cd.bin -efi-boot-part --efi-boot-image \

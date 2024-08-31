@@ -1,7 +1,7 @@
 [submodule "vendor/limine"]
 	path = vendor/limine
 	url = https://github.com/limine-bootloader/limine
-	branch = v7.x-binary
+	branch = v8.x-binary
 [submodule "vendor/kconfiglib"]
 	path = vendor/kconfiglib
 	url = https://github.com/ulfalizer/Kconfiglib
