@@ -60,6 +60,11 @@ LIMINE_REQ static volatile struct limine_module_request module_request = {
 	.revision = 0
 };
 
+LIMINE_REQ static volatile struct limine_bootloader_info_request binfo_request = {
+	.id = LIMINE_BOOTLOADER_INFO_REQUEST,
+	.revision = 0,
+};
+
 cpudata_t bsp_data;
 
 void limine_remap_mem()
@@ -208,6 +213,9 @@ void limine_entry(void)
 
 	printk(INFO "Nyy//limine " ARCHNAME " (Built on: " __DATE__ " " __TIME__
 		    ")\n");
+	struct limine_bootloader_info_response *binfo = binfo_request.response;
+	printk(INFO "booted using %s version %s-%ld\n", binfo->name,
+	       binfo->version, binfo->revision);
 
 	pm_init();
 	struct limine_memmap_entry **entries = memmap_request.response->entries;
