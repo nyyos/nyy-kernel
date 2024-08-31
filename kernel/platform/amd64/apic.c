@@ -161,7 +161,7 @@ void apic_arm(uint64_t deadline)
 
 timer_engine_t apic_timer_engine;
 
-int timer_handler(irq_t *obj, cpu_state_t *frame, void *private)
+int timer_handler(irq_t *obj, interrupt_frame_t *frame, void *private)
 {
 	(void)obj;
 	(void)frame;

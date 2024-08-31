@@ -2,6 +2,7 @@ subdir('lib')
 subdir('vm')
 subdir('irq')
 subdir('boot')
+subdir('sched')
 
 # XXX: make this depend on config
 subdir('acpi')

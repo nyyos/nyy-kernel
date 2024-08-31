@@ -84,7 +84,7 @@ void cpu_idt_load()
 	asm volatile("lidt %0" ::"m"(idtr) : "memory");
 }
 
-void handle_pf(cpu_state_t *frame)
+void handle_pf(interrupt_frame_t *frame)
 {
 	int error_code = frame->code;
 	printk(DEBUG "Page Fault Error Code: 0x%x\n", error_code);
@@ -132,7 +132,7 @@ void handle_pf(cpu_state_t *frame)
 	panic("page fault not handled\n");
 }
 
-void handle_fault(cpu_state_t *frame, int number)
+void handle_fault(interrupt_frame_t *frame, int number)
 {
 	printk("== FAULT ==\n");
 	printk("cpu state:\n");
@@ -156,7 +156,7 @@ int port_register_isr(vector_t vec, irq_handler_fn_t handler_fn)
 	return 0;
 }
 
-void handle_irq(cpu_state_t *frame, int number)
+void handle_irq(interrupt_frame_t *frame, int number)
 {
 	irql_t irql = irql_current();
 	asm volatile("sti");

@@ -78,8 +78,8 @@ extern "C" {
 static void tu_print_location(const char *message,
 			      struct tu_source_location loc)
 {
-	printk("tinyubsan: %s at file %s %d:%d\n", message, loc.file,
-		   loc.line, loc.column);
+	printk("tinyubsan: %s at file %s %d:%d\n", message, loc.file, loc.line,
+	       loc.column);
 }
 
 void __ubsan_handle_add_overflow(struct tu_overflow_data *data)

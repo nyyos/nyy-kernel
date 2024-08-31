@@ -35,7 +35,7 @@ void irq_free_obj(irq_t *obj)
 	kmem_cache_free(irq_obj_cache, obj);
 }
 
-static void irq_do_dispatch(cpu_state_t *iframe, vector_t vec)
+static void irq_do_dispatch(interrupt_frame_t *iframe, vector_t vec)
 {
 	irq_t *obj;
 	irq_vector_t *handler = &s_vectors[vec];

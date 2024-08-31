@@ -21,7 +21,7 @@ typedef struct vm_port_map {
 } vm_port_map_t;
 
 typedef struct [[gnu::packed]] cpu_state {
-} cpu_state_t;
+} interrupt_frame_t;
 
 static inline void port_enable_ints()
 {
