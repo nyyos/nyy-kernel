@@ -158,7 +158,7 @@ int port_register_isr(vector_t vec, irq_handler_fn_t handler_fn)
 
 void handle_irq(interrupt_frame_t *frame, int number)
 {
-	irql_t irql = irql_current();
+	irql_t irql = irql_raise((number >> 4));
 	asm volatile("sti");
 
 	apic_eoi();
@@ -166,7 +166,7 @@ void handle_irq(interrupt_frame_t *frame, int number)
 	irq_handlers[number](frame, number - 32);
 
 	asm volatile("cli");
-	irql_set(irql);
+	irql_lower(irql);
 }
 
 irql_t irql_current()

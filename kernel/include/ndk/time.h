@@ -4,6 +4,7 @@
 #include <sys/queue.h>
 #include <heap.h>
 #include <ndk/ndk.h>
+#include <ndk/dpc.h>
 
 #define NS2FEMTOS(X) ((X) * 1000000L)
 #define NS2US(X) ((X) / 1000L)
@@ -39,8 +40,7 @@ enum timer_mode {
 };
 
 typedef struct timer {
-	void (*callback)(void *private);
-	void *private;
+	dpc_t *dpc;
 
 	uint64_t deadline;
 	uint64_t interval; // used by periodic mode
@@ -75,12 +75,10 @@ void time_engine_init(timer_engine_t *ep, clocksource_t *csp,
 timer_engine_t *gp_engine();
 void set_gp_engine(timer_engine_t *ep);
 
-void timer_install(timer_engine_t *ep, timer_t *tp);
-void timer_uninstall(timer_t *tp, int flags);
-void time_engine_update(timer_engine_t *ep);
-
 timer_t *timer_allocate();
 void timer_free(timer_t *timer);
 
-void timer_set(timer_t *tp, uint64_t deadline, void (*callback)(void *),
-	       void *private, int mode);
+void timer_initialize(timer_t *tp, uint64_t deadline, dpc_t *dpc, int mode);
+void timer_install(timer_t *tp, void *context1,
+		   void *context2);
+void timer_uninstall(timer_t *tp, int flags);

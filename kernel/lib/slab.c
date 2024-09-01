@@ -164,6 +164,7 @@ kmem_cache_t *kmem_cache_create(const char *name, size_t bufsize, size_t align,
 
 	// check if P2
 	assert(align == 0 || P2CHECK(align));
+	assert(bufsize != 0);
 
 	if (align == 0) {
 		if (ALIGN_UP(bufsize, KMEM_ALIGN) >= KMEM_SECOND_ALIGN)

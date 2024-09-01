@@ -9,7 +9,7 @@ qemu_smp="${QEMU_SMP:=2}"
 qemu_args=
 iso="build-${PORT}/nyy-amd64-limine.iso"
 
-while getopts "kngspHuQq:10" optchar; do
+while getopts "kngspHuQGq:10" optchar; do
 	case $optchar in
 	s) qemu_args="$qemu_args -serial stdio" ;;
 	k) qemu_args="$qemu_args -enable-kvm -cpu host" ;;
@@ -18,6 +18,7 @@ while getopts "kngspHuQq:10" optchar; do
 	q) qemu_args="${qemu_args} ${OPTARG}" ;;
 	Q) print_command=1 ;;
 	g) qemu_args="$qemu_args -M smm=off -d int -D qemulog.txt" ;;
+	G) qemu_args="$qemu_args -nographic" ;;
 	u) iso="build-${PORT}/nyy-${PORT}-hyper.iso" ;;
 	H) qemu_args="$qemu_args -machine hpet=off" ;;
 	*) exit 1 ;;

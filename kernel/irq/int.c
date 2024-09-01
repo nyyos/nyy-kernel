@@ -7,11 +7,20 @@
 
 void softint_dispatch(irql_t newirql)
 {
+	int old = port_set_ints(0);
 	while ((cpudata()->softint_pending & (0xff << newirql)) != 0) {
 		if (cpudata()->softint_pending & PENDING(IRQL_DISPATCH)) {
+			softint_ack(IRQL_DISPATCH);
+			irql_set(IRQL_DISPATCH);
+			port_enable_ints();
 			dpc_run_queue();
+			port_disable_ints();
 		}
 	}
+
+	irql_set(newirql);
+
+	port_set_ints(old);
 }
 
 void softint_issue(irql_t irql)

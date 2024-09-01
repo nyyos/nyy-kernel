@@ -3,6 +3,8 @@
 #include <ndk/addr.h>
 #include <stdint.h>
 
+#include "gdt.h"
+
 #define PAGE_SIZE 0x1000
 
 #define MEM_HHDM_START 0xFFFF800000000000L
@@ -29,7 +31,6 @@ typedef struct vm_port_map {
 	paddr_t cr3;
 } vm_port_map_t;
 
-// also acts as "iframe"
 typedef struct [[gnu::packed]] interrupt_frame {
 	uint64_t rax;
 	uint64_t rbx;
@@ -78,6 +79,8 @@ typedef struct cpu_state {
 	uint64_t rflags;
 	uint64_t rsp;
 	uint64_t ss;
+
+	// XXX: FP state
 } cpu_state_t;
 
 #define STATE_SP(state) (state)->rsp
@@ -88,6 +91,18 @@ typedef struct cpu_state {
 #define STATE_ARG4(state) (state)->rcx
 #define STATE_ARG5(state) (state)->r8
 #define STATE_ARG6(state) (state)->r9
+
+static inline void port_init_state(cpu_state_t *state, int user)
+{
+	state->rflags = 0x200;
+	if (user != 0) {
+		state->cs = kGdtUserCode * 8;
+		state->ss = kGdtUserData * 8;
+	} else {
+		state->cs = kGdtKernelCode * 8;
+		state->ss = kGdtKernelData * 8;
+	}
+}
 
 static inline void port_save_frame_to_state(interrupt_frame_t *frame,
 					    cpu_state_t *state)
@@ -130,6 +145,17 @@ static inline void port_enable_ints()
 static inline void port_disable_ints()
 {
 	asm volatile("cli");
+}
+
+static inline int port_set_ints(int state)
+{
+	uint64_t flags;
+	asm volatile("pushfq; pop %0" : "=rm"(flags)::"memory");
+	if (!state)
+		asm volatile("cli");
+	else
+		asm volatile("sti");
+	return flags & (1 << 9);
 }
 
 static inline void port_wait_nextint()

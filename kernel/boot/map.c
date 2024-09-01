@@ -36,8 +36,8 @@ void remap_memmap_entry(uintptr_t base, size_t length, int cache)
 #ifdef AMD64
 #ifdef CONFIG_HHDM_HUGEPAGES
 	// map using the largest possible pages
+	// 1gb pages are automatically emulated
 	while (base < end) {
-		// XXX: check if gb pages are supported with cpuid
 		if ((base % GiB(1)) == 0 && (base + GiB(1) <= end)) {
 			vm_port_map(kmap, PADDR(base),
 				    VADDR(REAL_HHDM_START.addr + base), cache,

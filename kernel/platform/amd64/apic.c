@@ -108,26 +108,6 @@ static void apic_timer_calibrate()
 	cpudata()->port_data.lapic_calibrated = true;
 }
 
-void apic_enable()
-{
-	// mask everything
-	apic_write(APIC_REG_LVT_TIMER, (1 << 16));
-	apic_write(APIC_REG_LVT_ERROR, (1 << 16));
-	apic_write(APIC_REG_LVT_LINT0, (1 << 16));
-	apic_write(APIC_REG_LVT_LINT1, (1 << 16));
-	apic_write(APIC_REG_LVT_PERFMON, (1 << 16));
-	apic_write(APIC_REG_LVT_THERMAL, (1 << 16));
-	apic_eoi();
-	// send spurious interrupts to 0xFF, enable APIC
-	apic_write(APIC_REG_SPURIOUS, (1 << 8) | 0xFF);
-
-	cpudata()->port_data.lapic_id = apic_read(APIC_REG_ID);
-
-	apic_timer_calibrate();
-	apic_write(APIC_REG_LVT_TIMER, g_apic.timer_irq->vector->vector + 32);
-	apic_eoi();
-}
-
 void apic_send_ipi(uint32_t lapic_id, vector_t vector)
 {
 	apic_write(APIC_REG_ICR1, lapic_id << 24);
@@ -159,15 +139,37 @@ void apic_arm(uint64_t deadline)
 	apic_write(APIC_REG_TIMER_INITIAL, ticks);
 }
 
-timer_engine_t apic_timer_engine;
-
 int timer_handler(irq_t *obj, interrupt_frame_t *frame, void *private)
 {
 	(void)obj;
 	(void)frame;
 	(void)private;
-	time_engine_update(&apic_timer_engine);
+	if (clocksource()->current_nanos() >= cpudata()->next_deadline) {
+		dpc_enqueue(&cpudata()->timer_update, NULL, NULL);
+	}
 	return kIrqAck;
+}
+
+void apic_enable()
+{
+	// mask everything
+	apic_write(APIC_REG_LVT_TIMER, (1 << 16));
+	apic_write(APIC_REG_LVT_ERROR, (1 << 16));
+	apic_write(APIC_REG_LVT_LINT0, (1 << 16));
+	apic_write(APIC_REG_LVT_LINT1, (1 << 16));
+	apic_write(APIC_REG_LVT_PERFMON, (1 << 16));
+	apic_write(APIC_REG_LVT_THERMAL, (1 << 16));
+	apic_eoi();
+	// send spurious interrupts to 0xFF, enable APIC
+	apic_write(APIC_REG_SPURIOUS, (1 << 8) | 0xFF);
+
+	cpudata()->port_data.lapic_id = apic_read(APIC_REG_ID);
+
+	apic_timer_calibrate();
+	time_engine_init(&cpudata()->timer_engine, clocksource(), apic_arm);
+	apic_write(APIC_REG_LVT_TIMER, g_apic.timer_irq->vector->vector + 32);
+
+	apic_eoi();
 }
 
 void apic_init()
@@ -183,7 +185,4 @@ void apic_init()
 	g_apic.timer_irq = irq_allocate_obj();
 	irq_initialize_obj_irql(g_apic.timer_irq, IRQL_CLOCK, IRQ_FORCE);
 	g_apic.timer_irq->handler = timer_handler;
-
-	time_engine_init(&apic_timer_engine, clocksource(), apic_arm);
-	set_gp_engine(&apic_timer_engine);
 }

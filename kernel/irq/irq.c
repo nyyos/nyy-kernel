@@ -5,6 +5,7 @@
 #include <ndk/irql.h>
 #include <ndk/port.h>
 #include <ndk/ndk.h>
+#include <ndk/cpudata.h>
 
 static kmem_cache_t *irq_obj_cache;
 static spinlock_t s_irq_lock;

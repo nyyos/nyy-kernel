@@ -1,4 +1,3 @@
-#include "ndk/irql.h"
 #include <sys/queue.h>
 #include <assert.h>
 #include <ndk/ndk.h>
@@ -6,15 +5,16 @@
 #include <ndk/dpc.h>
 #include <ndk/int.h>
 
-void dpc_init(dpc_t *dpc, void (*function)(void *), void *private)
+void dpc_init(dpc_t *dpc, void (*function)(dpc_t *dpc, void *, void *))
 {
 	assert(dpc && function);
 	dpc->function = function;
-	dpc->private = private;
+	dpc->context1 = nullptr;
+	dpc->context2 = nullptr;
 	dpc->enqueued = 0;
 }
 
-void dpc_enqueue(dpc_t *dpc)
+void dpc_enqueue(dpc_t *dpc, void *context1, void *context2)
 {
 	dpc_queue_t *queue = &cpudata()->dpc_queue;
 	irql_t old = spinlock_acquire(&queue->dpc_lock, IRQL_HIGH);
@@ -22,6 +22,8 @@ void dpc_enqueue(dpc_t *dpc)
 		spinlock_release(&queue->dpc_lock, old);
 		return;
 	}
+	dpc->context1 = context1;
+	dpc->context2 = context2;
 	queue->dpc_count++;
 	TAILQ_INSERT_TAIL(&queue->dpcq, dpc, queue_entry);
 	dpc->enqueued = 1;
@@ -40,16 +42,23 @@ void dpc_dequeue(dpc_t *dpc)
 /* raises IRQL to DISPATCH_LEVEL */
 void dpc_run_queue()
 {
-	irql_t old = irql_raise(IRQL_DISPATCH);
-	softint_ack(IRQL_DISPATCH);
+	void *context1, *context2;
 	dpc_queue_t *queue = &cpudata()->dpc_queue;
 	dpc_t *dpc;
-	while (!TAILQ_EMPTY(&queue->dpcq)) {
+	while (1) {
+		irql_t old = spinlock_acquire(&queue->dpc_lock, IRQL_HIGH);
+		if (TAILQ_EMPTY(&queue->dpcq)) {
+			spinlock_release(&queue->dpc_lock, old);
+			return;
+		}
 		dpc = TAILQ_FIRST(&queue->dpcq);
 		assert(dpc && dpc->function);
 		TAILQ_REMOVE(&queue->dpcq, dpc, queue_entry);
 		queue->dpc_count--;
-		dpc->function(dpc->private);
+		dpc->enqueued = 0;
+		context1 = dpc->context1;
+		context2 = dpc->context2;
+		spinlock_release(&queue->dpc_lock, old);
+		dpc->function(dpc, context1, context2);
 	}
-	irql_lower(old);
 }

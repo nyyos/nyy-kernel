@@ -1,8 +1,9 @@
-#include "cpuid.h"
 #include <backends/fb.h>
 #include <string.h>
 #include <flanterm.h>
 #include <limine.h>
+#include <nyyconf.h>
+#include <limine-generic.h>
 #include <ndk/addr.h>
 #include <ndk/internal/boot.h>
 #include <ndk/internal/symbol.h>
@@ -12,9 +13,13 @@
 #include <ndk/ndk.h>
 #include <ndk/time.h>
 #include <ndk/cpudata.h>
-#include <nyyconf.h>
+#include <ndk/sched.h>
+#include <ndk/dpc.h>
 #include <dkit/console.h>
-#include <limine-generic.h>
+
+#ifdef AMD64
+#include "cpuid.h"
+#endif
 
 #define LIMINE_REQ __attribute__((used, section(".requests")))
 
@@ -191,6 +196,30 @@ static void consume_modules()
 	}
 }
 
+static int n = 0;
+
+void test_kthread()
+{
+	int i = n++;
+	for (;;) {
+		printk("%d", i);
+		//printk(DEBUG "IN KTHREAD %d\n", i);
+	}
+	__builtin_trap();
+}
+
+static int seconds_uptime = 0;
+void donothing(dpc_t *, void *, void *)
+{
+	seconds_uptime++;
+	//extern void sched_schedule();
+	//sched_schedule();
+	int hours = seconds_uptime / 3600;
+	int minutes = (seconds_uptime - hours * 3600) / 60;
+	int seconds = seconds_uptime - minutes * 60 - hours * 3600;
+	printk("\t>> uptime: %02d:%02d:%02d\r", hours, minutes, seconds);
+}
+
 void limine_entry(void)
 {
 	REAL_HHDM_START = PADDR(hhdm_request.response->offset);
@@ -203,12 +232,13 @@ void limine_entry(void)
 	_port_init_boot_consoles();
 	early_fb_init();
 
+#ifdef AMD64
 	assert(g_features.pat == 1);
-
 #if 0
 	printk("cpu features:\n\t1gb pages:%d\n\tNX:%d\n\tGlobal pages:%d\n\tPAT:%d\n\tPCID:%d\n",
 	       g_features.gbpages, g_features.nx, g_features.pge,
 	       g_features.pat, g_features.pcid);
+#endif
 #endif
 
 	printk(INFO "Nyy//limine " ARCHNAME " (Built on: " __DATE__ " " __TIME__
@@ -238,7 +268,26 @@ void limine_entry(void)
 	time_init();
 	port_scheduler_init();
 
-	assert(clocksource() && gp_engine());
+	assert(clocksource());
+
+	/*
+	sched_init();
+	task_t *task = sched_create_task(test_kthread, kPriorityHigh);
+	sched_enqueue(task);
+	task = sched_create_task(test_kthread, kPriorityHigh);
+	sched_enqueue(task);
+	task = sched_create_task(test_kthread, kPriorityHigh);
+	sched_enqueue(task);
+	task = sched_create_task(test_kthread, kPriorityHigh);
+	sched_enqueue(task);
+	*/
+
+	timer_t *timer = timer_allocate();
+	dpc_t donothing_dpc;
+	dpc_init(&donothing_dpc, donothing);
+	timer_initialize(timer, MS2NS(1000), &donothing_dpc,
+			 kTimerPeriodicMode);
+	timer_install(timer, NULL, NULL);
 
 #ifdef CONFIG_SMP
 	start_cores();
