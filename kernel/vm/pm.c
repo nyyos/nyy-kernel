@@ -41,7 +41,7 @@ void pm_add_region(paddr_t base, size_t length)
 		return;
 	}
 
-	irql_t irql = spinlock_acquire(&buddy_lock, IRQL_HIGH);
+	spinlock_acquire(&buddy_lock);
 	region = (region_t *)P2V(base).addr;
 	region->pagecnt = length / PAGE_SIZE;
 	region->base = base;
@@ -67,7 +67,7 @@ void pm_add_region(paddr_t base, size_t length)
 
 	vmstat.used += used / PAGE_SIZE;
 
-	spinlock_release(&buddy_lock, irql);
+	spinlock_release(&buddy_lock);
 
 	printk(DEBUG "added pm region 0x%lx (%ld/%ld pages usable)\n",
 	       base.addr, (length - used) / PAGE_SIZE, length / PAGE_SIZE);
@@ -96,12 +96,12 @@ static inline page_t *pm_lookup_with_region(paddr_t paddr, region_t *region)
 page_t *pm_allocate_n(size_t n, short usage)
 {
 	assert(n == 1);
-	irql_t irql = spinlock_acquire(&buddy_lock, IRQL_HIGH);
+	spinlock_acquire(&buddy_lock);
 	page_t *pg = TAILQ_FIRST(&buddy_freelist[0]);
 	pg->usage = usage;
 	TAILQ_REMOVE(&buddy_freelist[0], pg, queue_entry);
 	__atomic_fetch_add(&vmstat.used, n, __ATOMIC_RELAXED);
-	spinlock_release(&buddy_lock, irql);
+	spinlock_release(&buddy_lock);
 	return pg;
 }
 
@@ -143,13 +143,13 @@ page_t *pm_lookup(paddr_t paddr)
 void pm_free_n(page_t *pages, size_t n)
 {
 	assert(n == 1);
-	irql_t irql = spinlock_acquire(&buddy_lock, IRQL_HIGH);
+	spinlock_acquire(&buddy_lock);
 	for (size_t i = 0; i < n; i++) {
 		pages[i].usage = kPageUseFree;
 	}
 	TAILQ_INSERT_TAIL(&buddy_freelist[0], pages, queue_entry);
 	__atomic_fetch_sub(&vmstat.used, n, __ATOMIC_RELAXED);
-	spinlock_release(&buddy_lock, irql);
+	spinlock_release(&buddy_lock);
 }
 
 void vmstat_dump()

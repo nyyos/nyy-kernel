@@ -208,16 +208,13 @@ void test_kthread()
 	__builtin_trap();
 }
 
-static int seconds_uptime = 0;
 void donothing(dpc_t *, void *, void *)
 {
-	seconds_uptime++;
-	//extern void sched_schedule();
-	//sched_schedule();
+	int seconds_uptime = NS2MS(clocksource()->current_nanos()) / 1000;
 	int hours = seconds_uptime / 3600;
 	int minutes = (seconds_uptime - hours * 3600) / 60;
 	int seconds = seconds_uptime - minutes * 60 - hours * 3600;
-	printk("\t>> uptime: %02d:%02d:%02d\r", hours, minutes, seconds);
+	printk("\r>> uptime: %02d:%02d:%02d", hours, minutes, seconds);
 }
 
 void limine_entry(void)
@@ -281,6 +278,9 @@ void limine_entry(void)
 	task = sched_create_task(test_kthread, kPriorityHigh);
 	sched_enqueue(task);
 	*/
+
+	//char *nullp = (char *)nullptr;
+	//*nullp = '\a';
 
 	timer_t *timer = timer_allocate();
 	dpc_t donothing_dpc;

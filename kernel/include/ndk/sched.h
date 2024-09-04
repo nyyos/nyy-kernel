@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
 #include <sys/queue.h>
 #include <ndk/ndk.h>
 #include <ndk/port.h>
@@ -17,11 +18,16 @@ enum {
 };
 
 typedef struct task {
-	cpu_state_t state;
+	context_t *context;
+	spinlock_t task_lock;
+
 	int priority;
 
 	TAILQ_ENTRY(task) entry;
 } task_t;
+
+static_assert(offsetof(struct task, context) == 0);
+static_assert(offsetof(struct task, task_lock) == 8);
 
 typedef TAILQ_HEAD(, task) task_queue_t;
 
@@ -32,5 +38,10 @@ typedef struct scheduler {
 
 void sched_init();
 void sched_enqueue(task_t *task);
-task_t *sched_create_task(void *ip, int priority);
+void sched_preempt();
+
+typedef void(task_start_fn)(void *, void *);
+
+task_t *sched_create_task(task_start_fn startfn, int priority, void *context1,
+			  void *context2);
 void sched_destroy_task(task_t *task);

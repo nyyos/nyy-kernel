@@ -139,7 +139,7 @@ void apic_arm(uint64_t deadline)
 	apic_write(APIC_REG_TIMER_INITIAL, ticks);
 }
 
-int timer_handler(irq_t *obj, interrupt_frame_t *frame, void *private)
+int timer_handler(irq_t *obj, context_t *frame, void *private)
 {
 	(void)obj;
 	(void)frame;

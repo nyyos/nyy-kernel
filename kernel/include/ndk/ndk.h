@@ -11,19 +11,17 @@ typedef struct spinlock {
 	volatile int flag;
 } spinlock_t;
 
-#define SPINLOCK_WAIT(spinlock) spinlock_acquire(spinlock, HIGH_LEVEL);
 #define SPINLOCK_INIT(spinlock) ((spinlock)->flag = 0);
 // clang-format off
 #define SPINLOCK_INITIALIZER() {0}
 // clang-format on
 
-#ifdef CONFIG_SMP
-static inline void spinlock_release_no_irql(spinlock_t *spinlock)
+static inline void spinlock_release(spinlock_t *spinlock)
 {
 	__atomic_store_n(&spinlock->flag, 0, __ATOMIC_RELEASE);
 }
 
-static inline void spinlock_acquire_no_irql(spinlock_t *spinlock)
+static inline void spinlock_acquire(spinlock_t *spinlock)
 {
 	int unlocked = 0;
 	while (!__atomic_compare_exchange_n(&spinlock->flag, &unlocked, 1, 0,
@@ -34,48 +32,22 @@ static inline void spinlock_acquire_no_irql(spinlock_t *spinlock)
 	}
 }
 
-static inline bool spinlock_try_lock_no_irql(spinlock_t *spinlock)
+static inline bool spinlock_try_lock(spinlock_t *spinlock)
 {
 	int unlocked = 0;
 	return __atomic_compare_exchange_n(&spinlock->flag, &unlocked, 1, 0,
 					   __ATOMIC_ACQUIRE, __ATOMIC_RELAXED);
 }
-#else
-static inline void spinlock_release_no_irql(spinlock_t *spinlock)
+static inline void spinlock_release_lower(spinlock_t *spinlock, irql_t old)
 {
+	spinlock_release(spinlock);
+	irql_lower(old);
 }
 
-static inline void spinlock_acquire_no_irql(spinlock_t *spinlock)
+[[nodiscard]] static inline irql_t spinlock_acquire_raise(spinlock_t *spinlock)
 {
-}
-
-static inline bool spinlock_try_lock_no_irql(spinlock_t *spinlock)
-{
-	return true;
-}
-#endif
-
-static inline bool spinlock_try_lock(spinlock_t *spinlock, irql_t at,
-				     irql_t *old)
-{
-	if (spinlock_try_lock_no_irql(spinlock)) {
-		*old = irql_raise(at);
-		return true;
-	}
-	return false;
-}
-
-static inline void spinlock_release(spinlock_t *spinlock, irql_t to)
-{
-	spinlock_release_no_irql(spinlock);
-	irql_lower(to);
-}
-
-[[nodiscard]] static inline irql_t spinlock_acquire(spinlock_t *spinlock,
-						    irql_t at)
-{
-	irql_t old = irql_raise(at);
-	spinlock_acquire_no_irql(spinlock);
+	irql_t old = irql_raise(IRQL_DISPATCH);
+	spinlock_acquire(spinlock);
 	return old;
 }
 

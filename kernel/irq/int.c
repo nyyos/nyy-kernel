@@ -1,3 +1,4 @@
+#include "ndk/sched.h"
 #include <ndk/int.h>
 #include <ndk/ndk.h>
 #include <ndk/dpc.h>
@@ -5,16 +6,28 @@
 
 #define PENDING(irql) ((1 << ((irql) - 1)))
 
+static void dpc_interrupt()
+{
+	softint_ack(IRQL_DISPATCH);
+	irql_set(IRQL_DISPATCH);
+
+	port_enable_ints();
+
+	dpc_run_queue();
+
+	if (cpudata()->task_next) {
+		sched_preempt();
+	}
+
+	port_disable_ints();
+}
+
 void softint_dispatch(irql_t newirql)
 {
 	int old = port_set_ints(0);
 	while ((cpudata()->softint_pending & (0xff << newirql)) != 0) {
 		if (cpudata()->softint_pending & PENDING(IRQL_DISPATCH)) {
-			softint_ack(IRQL_DISPATCH);
-			irql_set(IRQL_DISPATCH);
-			port_enable_ints();
-			dpc_run_queue();
-			port_disable_ints();
+			dpc_interrupt();
 		}
 	}
 

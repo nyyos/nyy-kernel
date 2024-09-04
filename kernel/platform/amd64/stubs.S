@@ -9,9 +9,24 @@
 .macro FAULT_STUB type, number=0
 irqStub\number:
 .if \type == .L_typeFaultNoCode
-push $0
+# 8*15 = 120 + 8
+movq $0, -128(%rsp)
+.elseif \type == .L_typeFaultCode
+# NOTE: if something breaks after an exception occurred,
+#       look at this code
+
+# currently error code is on bottom of stack
+# store rax after it
+movq %rax, -8(%rsp)
+# pop error code into rax
+popq %rax
+# store error code after the context struct
+movq %rax, -128(%rsp)
+# restore rax stored after error code,
+# which is now popped so -8 offset
+movq -16(%rsp), %rax
 .endif
-# do swapgs
+# XXX: do swapgs
 push %rbp
 push %r15
 push %r14
@@ -29,6 +44,7 @@ push %rbx
 push %rax
 
 # do fault
+movq -8(%rsp), %rdx
 mov %rsp, %rdi
 mov $\number, %rsi
 xor %rbp, %rbp
@@ -50,14 +66,12 @@ pop %r14
 pop %r15
 pop %rbp
 
-add $8, %rsp
 iretq
 .endm
 
 .macro IRQ_STUB number=0
 irqStub\number:
-push $0
-# do swapgs
+# XXX: do swapgs
 push %rbp
 push %r15
 push %r14
@@ -96,15 +110,13 @@ pop %r14
 pop %r15
 pop %rbp
 
-add $8, %rsp
 iretq
 .endm
 
 .macro SPECIAL_STUB function, number
 .extern \function 
 irqStub\number:
-push $0
-# do swapgs
+# XXX: do swapgs
 push %rbp
 push %r15
 push %r14
@@ -142,7 +154,6 @@ pop %r14
 pop %r15
 pop %rbp
 
-add $8, %rsp
 iretq
 .endm
 

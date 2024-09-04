@@ -22,11 +22,11 @@ static spinlock_t g_vmem_lock;
 
 irql_t vmem_lock(void)
 {
-	return spinlock_acquire(&g_vmem_lock, IRQL_HIGH);
+	return spinlock_acquire_raise(&g_vmem_lock);
 }
 void vmem_unlock(irql_t old)
 {
-	spinlock_release(&g_vmem_lock, old);
+	spinlock_release_lower(&g_vmem_lock, old);
 }
 
 void *vmem_alloc_pages(size_t n)
@@ -309,7 +309,7 @@ void *vmem_xalloc(Vmem *vmp, size_t size, size_t align, size_t phase,
 		  size_t nocross, void *minaddr, void *maxaddr, int vmflag)
 {
 	assert(vmp);
-	irql_t irql = spinlock_acquire(&vmp->lock, IRQL_HIGH);
+	irql_t irql = spinlock_acquire_raise(&vmp->lock);
 	VmemSegList *first_list = freelist_for_size(vmp, size),
 		    *end = &vmp->freelist[FREELISTS_N], *list = NULL;
 	VmemSegment *new_seg = NULL, *new_seg2 = NULL, *seg = NULL;
@@ -470,7 +470,7 @@ found:
 
 	ret = (void *)new_seg->base;
 
-	spinlock_release(&vmp->lock, irql);
+	spinlock_release_lower(&vmp->lock, irql);
 	return ret;
 }
 
@@ -482,7 +482,7 @@ void *vmem_alloc(Vmem *vmp, size_t size, int vmflag)
 
 void vmem_xfree(Vmem *vmp, void *addr, size_t size)
 {
-	irql_t irql = spinlock_acquire(&vmp->lock, IRQL_HIGH);
+	irql_t irql = spinlock_acquire_raise(&vmp->lock);
 	VmemSegment *seg, *neighbor;
 	VmemSegList *list;
 
@@ -551,7 +551,7 @@ void vmem_xfree(Vmem *vmp, void *addr, size_t size)
 
 	vmp->stat.in_use -= size;
 	vmp->stat.free += size;
-	spinlock_release(&vmp->lock, irql);
+	spinlock_release_lower(&vmp->lock, irql);
 }
 
 void vmem_free(Vmem *vmp, void *addr, size_t size)

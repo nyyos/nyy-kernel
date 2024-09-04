@@ -5,6 +5,19 @@
 #include <ndk/dpc.h>
 #include <ndk/int.h>
 
+static int acquire_dpc_lock(cpudata_t *data)
+{
+	int oldstate = port_set_ints(0);
+	spinlock_acquire(&data->dpc_queue.dpc_lock);
+	return oldstate;
+}
+
+static void release_dpc_lock(cpudata_t *data, int old)
+{
+	spinlock_release(&data->dpc_queue.dpc_lock);
+	port_set_ints(old);
+}
+
 void dpc_init(dpc_t *dpc, void (*function)(dpc_t *dpc, void *, void *))
 {
 	assert(dpc && function);
@@ -17,9 +30,9 @@ void dpc_init(dpc_t *dpc, void (*function)(dpc_t *dpc, void *, void *))
 void dpc_enqueue(dpc_t *dpc, void *context1, void *context2)
 {
 	dpc_queue_t *queue = &cpudata()->dpc_queue;
-	irql_t old = spinlock_acquire(&queue->dpc_lock, IRQL_HIGH);
+	int oldstate = acquire_dpc_lock(cpudata());
 	if (dpc->enqueued) {
-		spinlock_release(&queue->dpc_lock, old);
+		release_dpc_lock(cpudata(), oldstate);
 		return;
 	}
 	dpc->context1 = context1;
@@ -28,27 +41,27 @@ void dpc_enqueue(dpc_t *dpc, void *context1, void *context2)
 	TAILQ_INSERT_TAIL(&queue->dpcq, dpc, queue_entry);
 	dpc->enqueued = 1;
 	softint_issue(IRQL_DISPATCH);
-	spinlock_release(&queue->dpc_lock, old);
+	release_dpc_lock(cpudata(), oldstate);
 }
 
 void dpc_dequeue(dpc_t *dpc)
 {
 	dpc_queue_t *queue = &cpudata()->dpc_queue;
-	irql_t old = spinlock_acquire(&queue->dpc_lock, IRQL_HIGH);
+	int oldstate = acquire_dpc_lock(cpudata());
 	TAILQ_REMOVE(&queue->dpcq, dpc, queue_entry);
-	spinlock_release(&queue->dpc_lock, old);
+	release_dpc_lock(cpudata(), oldstate);
 }
 
-/* raises IRQL to DISPATCH_LEVEL */
+/* IRQL is at DPC level at entry */
 void dpc_run_queue()
 {
 	void *context1, *context2;
 	dpc_queue_t *queue = &cpudata()->dpc_queue;
 	dpc_t *dpc;
 	while (1) {
-		irql_t old = spinlock_acquire(&queue->dpc_lock, IRQL_HIGH);
+		int oldstate = acquire_dpc_lock(cpudata());
 		if (TAILQ_EMPTY(&queue->dpcq)) {
-			spinlock_release(&queue->dpc_lock, old);
+			release_dpc_lock(cpudata(), oldstate);
 			return;
 		}
 		dpc = TAILQ_FIRST(&queue->dpcq);
@@ -58,7 +71,7 @@ void dpc_run_queue()
 		dpc->enqueued = 0;
 		context1 = dpc->context1;
 		context2 = dpc->context2;
-		spinlock_release(&queue->dpc_lock, old);
+		release_dpc_lock(cpudata(), oldstate);
 		dpc->function(dpc, context1, context2);
 	}
 }

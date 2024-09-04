@@ -36,7 +36,7 @@ void irq_free_obj(irq_t *obj)
 	kmem_cache_free(irq_obj_cache, obj);
 }
 
-static void irq_do_dispatch(interrupt_frame_t *iframe, vector_t vec)
+static void irq_do_dispatch(context_t *iframe, vector_t vec)
 {
 	irq_t *obj;
 	irq_vector_t *handler = &s_vectors[vec];
@@ -84,7 +84,7 @@ int irq_initialize_obj_irql(irq_t *obj, irql_t irqlWanted, int flags)
 	if (flags & IRQ_FORCE)
 		printk(DEBUG "IRQ_FORCE currently ignored\n");
 
-	irql_t oldIrql = spinlock_acquire(&s_irq_lock, IRQL_HIGH);
+	irql_t oldIrql = spinlock_acquire_raise(&s_irq_lock);
 
 	vector_t search_base = IRQL_TO_VECTOR(irqlWanted);
 	vector_t found = IRQ_VECTOR_MAX;
@@ -109,12 +109,12 @@ int irq_initialize_obj_irql(irq_t *obj, irql_t irqlWanted, int flags)
 	}
 
 	if (found == IRQ_VECTOR_MAX) {
-		spinlock_release(&s_irq_lock, oldIrql);
+		spinlock_release_lower(&s_irq_lock, oldIrql);
 		return 1;
 	}
 
 	int ret = irq_register_handler(obj, found, flags);
 
-	spinlock_release(&s_irq_lock, oldIrql);
+	spinlock_release_lower(&s_irq_lock, oldIrql);
 	return ret;
 }

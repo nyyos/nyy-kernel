@@ -58,7 +58,7 @@ void timer_free(timer_t *tp)
 	irql_t irql;
 
 	if (tp->engine != NULL)
-		irql = spinlock_acquire(&tp->engine->lock, IRQL_CLOCK);
+		irql = spinlock_acquire_raise(&tp->engine->lock);
 
 	assert(tp->timer_state == kTimerQueued &&
 		       tp->mode == kTimerPeriodicMode ||
@@ -68,7 +68,7 @@ void timer_free(timer_t *tp)
 	kmem_cache_free(g_timer_cache, tp);
 
 	if (tp->engine != NULL)
-		spinlock_release(&tp->engine->lock, irql);
+		spinlock_release_lower(&tp->engine->lock, irql);
 
 	tp->engine = NULL;
 }
@@ -98,11 +98,11 @@ static void time_engine_progress(dpc_t *dpc, void *context1, void *context2)
 
 	while (1) {
 		now = cp->current_nanos();
-		irql_t old = spinlock_acquire(&ep->lock, IRQL_DISPATCH);
+		irql_t old = spinlock_acquire_raise(&ep->lock);
 		if (HEAP_EMPTY(&ep->timerlist)) {
 			cpudata()->next_deadline = UINT64_MAX;
 			ep->arm(0);
-			spinlock_release(&ep->lock, old);
+			spinlock_release_lower(&ep->lock, old);
 			return;
 		}
 
@@ -110,7 +110,7 @@ static void time_engine_progress(dpc_t *dpc, void *context1, void *context2)
 			uint64_t next = HEAP_PEEK(&ep->timerlist)->deadline;
 			cpudata()->next_deadline = next;
 			ep->arm(next);
-			spinlock_release(&ep->lock, old);
+			spinlock_release_lower(&ep->lock, old);
 			break;
 		}
 
@@ -119,7 +119,7 @@ static void time_engine_progress(dpc_t *dpc, void *context1, void *context2)
 		if (timer->mode != kTimerPeriodicMode)
 			timer->engine = nullptr;
 
-		spinlock_release(&ep->lock, old);
+		spinlock_release_lower(&ep->lock, old);
 
 		timer->timer_state = kTimerFired;
 		dpc_t *timerdpc = timer->dpc;
@@ -133,11 +133,10 @@ static void time_engine_progress(dpc_t *dpc, void *context1, void *context2)
 		if (timer->mode == kTimerPeriodicMode) {
 			if (timer->engine != NULL) {
 				timer->deadline = now + timer->interval;
-				irql_t old = spinlock_acquire(&ep->lock,
-							      IRQL_DISPATCH);
+				irql_t old = spinlock_acquire_raise(&ep->lock);
 				timer->timer_state = kTimerQueued;
 				HEAP_INSERT(timerlist, &ep->timerlist, timer);
-				spinlock_release(&ep->lock, old);
+				spinlock_release_lower(&ep->lock, old);
 			}
 		}
 	}
@@ -150,7 +149,7 @@ void timer_uninstall(timer_t *tp, int flags)
 		return;
 	}
 	timer_engine_t *ep = tp->engine;
-	irql_t irql = spinlock_acquire(&ep->lock, IRQL_DISPATCH);
+	irql_t irql = spinlock_acquire_raise(&ep->lock);
 	tp->engine = NULL;
 	if (tp->timer_state == kTimerQueued)
 		tp->timer_state = kTimerCanceled;
@@ -158,14 +157,14 @@ void timer_uninstall(timer_t *tp, int flags)
 		tp->timer_state = kTimerUnused;
 	HEAP_REMOVE(timerlist, &ep->timerlist, tp);
 	dpc_enqueue(&cpudata()->timer_update, NULL, NULL);
-	spinlock_release(&ep->lock, irql);
+	spinlock_release_lower(&ep->lock, irql);
 }
 
 void timer_install(timer_t *tp, void *context1, void *context2)
 {
 	assert(tp->timer_state != kTimerQueued);
 	timer_engine_t *ep = &cpudata()->timer_engine;
-	irql_t irql = spinlock_acquire(&ep->lock, IRQL_DISPATCH);
+	irql_t irql = spinlock_acquire_raise(&ep->lock);
 	tp->engine = ep;
 	tp->timer_state = kTimerQueued;
 	if (tp->mode == kTimerPeriodicMode)
@@ -176,7 +175,7 @@ void timer_install(timer_t *tp, void *context1, void *context2)
 	}
 	HEAP_INSERT(timerlist, &ep->timerlist, tp);
 	dpc_enqueue(&cpudata()->timer_update, NULL, NULL);
-	spinlock_release(&ep->lock, irql);
+	spinlock_release_lower(&ep->lock, irql);
 }
 
 void time_engine_init(timer_engine_t *ep, clocksource_t *csp,

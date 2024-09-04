@@ -9,8 +9,8 @@
 
 typedef unsigned int vector_t;
 typedef struct irq irq_t;
-typedef void (*irq_handler_fn_t)(interrupt_frame_t *frame, vector_t number);
-typedef int (*obj_handler_fn_t)(irq_t *obj, interrupt_frame_t *frame,
+typedef void (*irq_handler_fn_t)(context_t *frame, vector_t number);
+typedef int (*obj_handler_fn_t)(irq_t *obj, context_t *frame,
 				void *private);
 
 enum { kIrqNack = 0, kIrqAck = 1 };

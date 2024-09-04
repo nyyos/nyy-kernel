@@ -16,8 +16,8 @@
 		       (state)->r13);                                 \
 		printk("r14: %016lx  r15: %016lx\n", (state)->r14,    \
 		       (state)->r15);                                 \
-		printk("rbp: %016lx  ss:  %016lx\n", (state)->ss,     \
-		       (state)->code);                                \
+		printk("rbp: %016lx  ss:  %016lx\n", (state)->rbp,    \
+		       (state)->ss);                                  \
 		printk("rip: %016lx  cs:  %016lx\n", (state)->rip,    \
 		       (state)->cs);                                  \
 		printk("RFL: %016lx  rsp: %016lx\n", (state)->rflags, \

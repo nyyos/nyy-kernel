@@ -4,6 +4,7 @@
 #include <ndk/port.h>
 #include <ndk/util.h>
 #include <ndk/dpc.h>
+#include <ndk/sched.h>
 #include <ndk/time.h>
 
 typedef struct cpudata {
@@ -11,6 +12,12 @@ typedef struct cpudata {
 	uint64_t softint_pending;
 	dpc_queue_t dpc_queue;
 	bool bsp;
+
+	scheduler_t scheduler;
+	task_t *idle_task;
+	task_t *task_current;
+	task_t *task_next;
+
 	timer_engine_t timer_engine;
 	uint64_t next_deadline;
 	dpc_t timer_update;

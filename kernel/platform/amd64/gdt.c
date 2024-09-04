@@ -83,7 +83,7 @@ void cpu_gdt_load()
 
 void cpu_tss_load(tss_t *tss)
 {
-	irql_t old = spinlock_acquire(&g_tsslock, IRQL_HIGH);
+	spinlock_acquire(&g_tsslock);
 	uint64_t tss_addr = (uint64_t)tss;
 	g_gdt.tss.low = (uint16_t)tss_addr;
 	g_gdt.tss.mid = (uint8_t)(tss_addr >> 16);
@@ -93,5 +93,5 @@ void cpu_tss_load(tss_t *tss)
 	g_gdt.tss.access = 0b10001001;
 	g_gdt.tss.rsv = 0;
 	asm volatile("ltr %0" ::"rm"(kGdtTss * 8) : "memory");
-	spinlock_release(&g_tsslock, old);
+	spinlock_release(&g_tsslock);
 }
