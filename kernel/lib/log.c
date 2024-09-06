@@ -121,6 +121,7 @@ static void _printk_buffer_write(logbuffer_t *lb)
 
 [[clang::no_sanitize("undefined")]] void printk(const char *fmt, ...)
 {
+	int oldstate = port_set_ints(0);
 	va_list args;
 	va_start(args, fmt);
 
@@ -166,6 +167,7 @@ static void _printk_buffer_write(logbuffer_t *lb)
 	va_end(args);
 
 	_printk_buffer_write(&g_lb);
+	port_set_ints(oldstate);
 }
 
 void console_add(console_t *console)

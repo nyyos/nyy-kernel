@@ -14,9 +14,10 @@ typedef struct cpudata {
 	bool bsp;
 
 	scheduler_t scheduler;
-	task_t *idle_task;
-	task_t *task_current;
-	task_t *task_next;
+	dpc_t done_queue_dpc;
+	thread_t idle_thread;
+	thread_t *thread_current;
+	thread_t *thread_next;
 
 	timer_engine_t timer_engine;
 	uint64_t next_deadline;

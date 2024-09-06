@@ -90,6 +90,21 @@ void timer_initialize(timer_t *tp, uint64_t deadline, dpc_t *dpc, int mode)
 	tp->timer_state = kTimerUnused;
 }
 
+void timer_reset(timer_t *tp, uint64_t deadline)
+{
+	assert(tp);
+	assert(tp->mode == kTimerOneshotMode);
+	if (tp->timer_state == kTimerQueued) {
+		timer_uninstall(tp, 0);
+	}
+	tp->deadline = deadline;
+}
+
+void timer_reset_in(timer_t *tp, uint64_t in_ns)
+{
+	timer_reset(tp, clocksource()->current_nanos() + in_ns);
+}
+
 static void time_engine_progress(dpc_t *dpc, void *context1, void *context2)
 {
 	timer_engine_t *ep = &cpudata()->timer_engine;

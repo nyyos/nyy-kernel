@@ -1,14 +1,16 @@
 #pragma once
 
+#include <stdbool.h>
+
 #include <nyyconf.h>
 
 #include <nanoprintf.h>
 
-#include "ndk/irql.h"
+#include <ndk/irql.h>
 #include <ndk/port.h>
 
 typedef struct spinlock {
-	volatile int flag;
+	volatile uint8_t flag;
 } spinlock_t;
 
 #define SPINLOCK_INIT(spinlock) ((spinlock)->flag = 0);
@@ -23,7 +25,7 @@ static inline void spinlock_release(spinlock_t *spinlock)
 
 static inline void spinlock_acquire(spinlock_t *spinlock)
 {
-	int unlocked = 0;
+	uint8_t unlocked = 0;
 	while (!__atomic_compare_exchange_n(&spinlock->flag, &unlocked, 1, 0,
 					    __ATOMIC_ACQUIRE,
 					    __ATOMIC_RELAXED)) {
@@ -32,9 +34,14 @@ static inline void spinlock_acquire(spinlock_t *spinlock)
 	}
 }
 
+static inline bool spinlock_held(spinlock_t *spinlock)
+{
+	return __atomic_load_n(&spinlock->flag, __ATOMIC_RELAXED);
+}
+
 static inline bool spinlock_try_lock(spinlock_t *spinlock)
 {
-	int unlocked = 0;
+	uint8_t unlocked = 0;
 	return __atomic_compare_exchange_n(&spinlock->flag, &unlocked, 1, 0,
 					   __ATOMIC_ACQUIRE, __ATOMIC_RELAXED);
 }

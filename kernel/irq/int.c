@@ -15,7 +15,7 @@ static void dpc_interrupt()
 
 	dpc_run_queue();
 
-	if (cpudata()->task_next) {
+	if (cpudata()->thread_next) {
 		sched_preempt();
 	}
 

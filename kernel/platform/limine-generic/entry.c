@@ -1,3 +1,4 @@
+#include "ndk/ports/amd64.h"
 #include <backends/fb.h>
 #include <string.h>
 #include <flanterm.h>
@@ -198,23 +199,67 @@ static void consume_modules()
 
 static int n = 0;
 
-void test_kthread()
+void test_kthread(void *, void *)
 {
 	int i = n++;
 	for (;;) {
-		printk("%d", i);
+		printk("low prio thread %d running\n", i);
+		asm volatile("hlt");
 		//printk(DEBUG "IN KTHREAD %d\n", i);
 	}
 	__builtin_trap();
 }
 
-void donothing(dpc_t *, void *, void *)
+void test_kthread_2(void *, void *)
+{
+	int j = n++;
+	for (int i = 0; i < 3; i++) {
+		printk("high prio thread %d running\n", j);
+		asm volatile("hlt");
+	}
+	sched_exit_destroy();
+}
+
+#if 0
+void print_uptime()
 {
 	int seconds_uptime = NS2MS(clocksource()->current_nanos()) / 1000;
 	int hours = seconds_uptime / 3600;
 	int minutes = (seconds_uptime - hours * 3600) / 60;
 	int seconds = seconds_uptime - minutes * 60 - hours * 3600;
 	printk("\r>> uptime: %02d:%02d:%02d", hours, minutes, seconds);
+}
+#endif
+
+void idle_thread_fn(void *, void *)
+{
+	assert(port_int_state() != 0);
+	for (;;) {
+		printk(INFO "cpu %ld is idle\n", cpudata()->port_data.lapic_id);
+		port_wait_nextint();
+	}
+}
+
+void start_threads(void *, void *)
+{
+	sched_exit_destroy();
+}
+
+void kickstart_main(void *, void *)
+{
+	thread_t testthread;
+	sched_init_thread(&testthread, start_threads, kPriorityHigh + 1, NULL,
+			  NULL);
+
+	timer_initialize(&cpudata()->scheduler.preemption_timer, MS2NS(1000),
+			 &cpudata()->scheduler.reschedule_dpc_timer,
+			 kTimerPeriodicMode);
+	timer_install(&cpudata()->scheduler.preemption_timer, NULL, NULL);
+
+	sched_resume(&testthread);
+
+	// become the idle thread
+	idle_thread_fn(NULL, NULL);
 }
 
 void limine_entry(void)
@@ -267,31 +312,17 @@ void limine_entry(void)
 
 	assert(clocksource());
 
-	/*
 	sched_init();
-	task_t *task = sched_create_task(test_kthread, kPriorityHigh);
-	sched_enqueue(task);
-	task = sched_create_task(test_kthread, kPriorityHigh);
-	sched_enqueue(task);
-	task = sched_create_task(test_kthread, kPriorityHigh);
-	sched_enqueue(task);
-	task = sched_create_task(test_kthread, kPriorityHigh);
-	sched_enqueue(task);
-	*/
 
 	//char *nullp = (char *)nullptr;
 	//*nullp = '\a';
-
-	timer_t *timer = timer_allocate();
-	dpc_t donothing_dpc;
-	dpc_init(&donothing_dpc, donothing);
-	timer_initialize(timer, MS2NS(1000), &donothing_dpc,
-			 kTimerPeriodicMode);
-	timer_install(timer, NULL, NULL);
 
 #ifdef CONFIG_SMP
 	start_cores();
 #endif
 
-	core_spinup();
+	sched_init_thread(&cpudata()->idle_thread, kickstart_main,
+			  kPriorityIdle, NULL, NULL);
+
+	sched_jump_into_idle_thread();
 }
