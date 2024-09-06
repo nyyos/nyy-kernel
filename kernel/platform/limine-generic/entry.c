@@ -1,4 +1,3 @@
-#include "ndk/ports/amd64.h"
 #include <backends/fb.h>
 #include <string.h>
 #include <flanterm.h>
@@ -17,10 +16,6 @@
 #include <ndk/sched.h>
 #include <ndk/dpc.h>
 #include <dkit/console.h>
-
-#ifdef AMD64
-#include "cpuid.h"
-#endif
 
 #define LIMINE_REQ __attribute__((used, section(".requests")))
 
@@ -71,44 +66,10 @@ LIMINE_REQ static volatile struct limine_bootloader_info_request binfo_request =
 	.revision = 0,
 };
 
-cpudata_t bsp_data;
-
-void limine_remap_mem()
-{
-	struct limine_kernel_address_response *address_res =
-		address_request.response;
-	struct limine_memmap_response *memmap_res = memmap_request.response;
-
-	paddr_t paddr = PADDR(address_res->physical_base);
-	vaddr_t vaddr = VADDR(address_res->virtual_base);
-
-	remap_kernel(paddr, vaddr);
-
-	struct limine_memmap_entry **entries = memmap_res->entries;
-	for (size_t i = 0; i < memmap_res->entry_count; i++) {
-		struct limine_memmap_entry *entry = entries[i];
-		uintptr_t base = PAGE_ALIGN_DOWN(entry->base);
-		size_t length = PAGE_ALIGN_UP(entry->length);
-
-		int cacheflags = kVmWriteback;
-		if (entry->type == LIMINE_MEMMAP_FRAMEBUFFER) {
-			cacheflags = kVmWritecombine;
-		}
-
-		remap_memmap_entry(base, length, cacheflags);
-	}
-
-	printk(INFO "remapped memory\n");
-}
-
-void core_spinup()
-{
-	irql_lower(IRQL_PASSIVE);
-	for (;;) {
-		port_enable_ints();
-		port_wait_nextint();
-	}
-}
+LIMINE_REQ static volatile struct limine_rsdp_request rsdp_request = {
+	.id = LIMINE_RSDP_REQUEST,
+	.revision = 0,
+};
 
 #ifdef CONFIG_SMP
 #define MAX_CORES 16
@@ -116,7 +77,7 @@ extern void port_smp_entry(struct limine_smp_info *smp_info);
 
 static struct smp_info ap_data[MAX_CORES];
 
-static void start_cores()
+void port_start_cores()
 {
 	printk(INFO "starting other cores\n");
 	struct limine_smp_response *res = smp_request.response;
@@ -177,7 +138,7 @@ static void early_fb_init()
 	}
 }
 
-[[gnu::weak]] void _port_init_boot_consoles()
+[[gnu::weak]] void limine_bootconsoles_init()
 {
 }
 
@@ -262,34 +223,26 @@ void kickstart_main(void *, void *)
 	idle_thread_fn(NULL, NULL);
 }
 
-void limine_entry(void)
+extern void kmain();
+
+void early_port_bootinfo()
 {
-	REAL_HHDM_START = PADDR(hhdm_request.response->offset);
-
-	port_init_bsp(&bsp_data);
-	port_data_common_init(&bsp_data);
-	cpudata()->bsp = true;
-
-	_printk_init();
-	_port_init_boot_consoles();
-	early_fb_init();
-
-#ifdef AMD64
-	assert(g_features.pat == 1);
-#if 0
-	printk("cpu features:\n\t1gb pages:%d\n\tNX:%d\n\tGlobal pages:%d\n\tPAT:%d\n\tPCID:%d\n",
-	       g_features.gbpages, g_features.nx, g_features.pge,
-	       g_features.pat, g_features.pcid);
-#endif
-#endif
-
 	printk(INFO "Nyy//limine " ARCHNAME " (Built on: " __DATE__ " " __TIME__
 		    ")\n");
+
 	struct limine_bootloader_info_response *binfo = binfo_request.response;
 	printk(INFO "booted using %s version %s-%ld\n", binfo->name,
 	       binfo->version, binfo->revision);
+}
 
-	pm_init();
+void early_port_output()
+{
+	limine_bootconsoles_init();
+	early_fb_init();
+}
+
+void early_port_add_pmem()
+{
 	struct limine_memmap_entry **entries = memmap_request.response->entries;
 	for (size_t i = 0; i < memmap_request.response->entry_count; i++) {
 		struct limine_memmap_entry *entry = entries[i];
@@ -297,29 +250,87 @@ void limine_entry(void)
 			pm_add_region(PADDR(entry->base), entry->length);
 		}
 	}
-	printk(INFO "initialized pm\n");
+}
 
-	vm_port_init_map(vm_kmap());
-	limine_remap_mem();
-	vm_port_activate(vm_kmap());
+extern char addr_data_end[];
+extern char addr_data_start[];
+extern char addr_text_end[];
+extern char addr_text_start[];
+extern char addr_rodata_end[];
+extern char addr_rodata_start[];
 
-	kmem_init();
+void remap_kernel(paddr_t paddr, vaddr_t vaddr)
+{
+	size_t offset = vaddr.addr - MEM_KERNEL_BASE;
+	symbols_init(offset);
+
+	vm_map_t *kmap = vm_kmap();
+
+#define MAP_SECTION(SECTION, VMFLAGS)                                 \
+	uintptr_t SECTION##_start =                                   \
+		PAGE_ALIGN_DOWN((uint64_t)addr_##SECTION##_start);    \
+	uintptr_t SECTION##_end =                                     \
+		PAGE_ALIGN_UP((uint64_t)addr_##SECTION##_end);        \
+	for (uintptr_t i = SECTION##_start; i < SECTION##_end;        \
+	     i += PAGE_SIZE) {                                        \
+		vm_port_map(kmap, PADDR(i - vaddr.addr + paddr.addr), \
+			    VADDR(i), kVmWritethrough, (VMFLAGS));    \
+	}
+
+	MAP_SECTION(text, kVmKernelCode | kVmGlobal);
+	MAP_SECTION(rodata, kVmRead | kVmGlobal);
+	MAP_SECTION(data, kVmAll | kVmGlobal);
+
+#undef MAP_SECTION
+}
+
+void early_port_map_memory()
+{
+	struct limine_kernel_address_response *address_res =
+		address_request.response;
+	struct limine_memmap_response *memmap_res = memmap_request.response;
+
+	paddr_t paddr = PADDR(address_res->physical_base);
+	vaddr_t vaddr = VADDR(address_res->virtual_base);
+
+	remap_kernel(paddr, vaddr);
+
+	printk(DEBUG "remapping hhdm\n");
+	struct limine_memmap_entry **entries = memmap_res->entries;
+	for (size_t i = 0; i < memmap_res->entry_count; i++) {
+		struct limine_memmap_entry *entry = entries[i];
+		uintptr_t base = PAGE_ALIGN_DOWN(entry->base);
+		size_t length = PAGE_ALIGN_UP(entry->length);
+
+		int cacheflags = kVmWriteback;
+		if (entry->type == LIMINE_MEMMAP_FRAMEBUFFER) {
+			cacheflags = kVmWritecombine;
+		}
+
+		remap_memmap_entry(base, length, cacheflags);
+	}
+
+	printk(DEBUG "remapped memory\n");
+}
+
+void early_port_post_kmem()
+{
 	consume_modules();
-	irq_init();
+}
 
-	time_init();
+uintptr_t early_port_get_rsdp()
+{
+	struct limine_rsdp_response res;
+}
+
+void limine_entry(void)
+{
+	REAL_HHDM_START = PADDR(hhdm_request.response->offset);
+	kmain();
+
 	port_scheduler_init();
 
 	assert(clocksource());
-
-	sched_init();
-
-	//char *nullp = (char *)nullptr;
-	//*nullp = '\a';
-
-#ifdef CONFIG_SMP
-	start_cores();
-#endif
 
 	sched_init_thread(&cpudata()->idle_thread, kickstart_main,
 			  kPriorityIdle, NULL, NULL);

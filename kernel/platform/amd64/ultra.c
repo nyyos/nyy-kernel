@@ -1,3 +1,4 @@
+#if 0
 #include <string.h>
 #include <ultra_protocol.h>
 #include <ndk/addr.h>
@@ -14,7 +15,7 @@
 
 extern void _port_init_boot_consoles();
 extern void port_init_bsp(cpudata_t *bsp_data);
-extern void port_data_common_init(cpudata_t *data);
+extern void port_cpu_common_init(cpudata_t *data);
 
 extern cpudata_t bsp_data;
 
@@ -154,7 +155,7 @@ void ultra_entry(struct ultra_boot_context *ctx, uint32_t magic)
 	REAL_HHDM_START = PADDR(MEM_HHDM_START);
 
 	port_init_bsp(&bsp_data);
-	port_data_common_init(&bsp_data);
+	port_cpu_common_init(&bsp_data);
 	cpudata()->bsp = true;
 
 	_printk_init();
@@ -204,3 +205,10 @@ void ultra_entry(struct ultra_boot_context *ctx, uint32_t magic)
 
 	hcf();
 }
+#else
+#include <stdint.h>
+#include <ultra_protocol.h>
+void ultra_entry(struct ultra_boot_context *ctx, uint32_t magic)
+{
+}
+#endif

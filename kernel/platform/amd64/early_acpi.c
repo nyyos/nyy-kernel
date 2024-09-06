@@ -9,12 +9,6 @@
 
 static struct acpi_rsdp *g_rsdp;
 
-void acpi_early_set_rsdp(void *rsdp)
-{
-	g_rsdp = rsdp;
-	printk(DEBUG "rsdp at %p\n", g_rsdp);
-}
-
 void *acpi_early_find(const char signature[4])
 {
 	if (g_rsdp->revision < 2) {

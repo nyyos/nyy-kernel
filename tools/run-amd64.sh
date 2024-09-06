@@ -18,7 +18,9 @@ while getopts "kngspHuQGq:10" optchar; do
 	q) qemu_args="${qemu_args} ${OPTARG}" ;;
 	Q) print_command=1 ;;
 	g) qemu_args="$qemu_args -M smm=off -d int -D qemulog.txt" ;;
-	G) qemu_args="$qemu_args -nographic" ;;
+	G) qemu_args="$qemu_args -nographic" 
+		echo "!! Exit QEMU with Ctrl+A then X"
+		;;
 	u) iso="build-${PORT}/nyy-${PORT}-hyper.iso" ;;
 	H) qemu_args="$qemu_args -machine hpet=off" ;;
 	*) exit 1 ;;

@@ -5,6 +5,7 @@
 typedef struct kmem_cache kmem_cache_t;
 
 void kmem_init();
+void va_kernel_init();
 
 kmem_cache_t *kmem_cache_create(const char *name, size_t bufsize, size_t align,
 				int (*constructor)(void *, void *),

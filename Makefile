@@ -23,7 +23,11 @@ run-hyper:
 
 gdb:
 	./tools/mkiso-$(ARCH).sh
-	./tools/run-$(ARCH).sh -sgp
+	./tools/run-$(ARCH).sh -sgp 
+
+gdb-nogui:
+	./tools/mkiso-$(ARCH).sh
+	./tools/run-$(ARCH).sh -gGp
 
 .PHONY: menuconfig
 menuconfig:

@@ -142,6 +142,7 @@ void handle_fault(context_t *frame, int number, uint64_t error_code)
 		handle_pf(frame, error_code);
 	} else {
 		printk("error code: %ld\n", error_code);
+		panic_withstack("unhandleable exception\n", frame->rbp);
 		panic("unhandleable exception\n");
 	}
 }

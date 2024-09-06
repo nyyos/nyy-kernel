@@ -23,10 +23,12 @@
 		printk("RFL: %016lx  rsp: %016lx\n", (state)->rflags, \
 		       (state)->rsp);                                 \
 		printk("\ncontrol registers:\n");                     \
-		uint64_t cr2, cr3, cr4;                               \
+		uint64_t cr0, cr2, cr3, cr4;                     \
+		asm volatile("mov %%cr0, %0" : "=r"(cr0));            \
 		asm volatile("mov %%cr2, %0" : "=r"(cr2));            \
 		asm volatile("mov %%cr3, %0" : "=r"(cr3));            \
 		asm volatile("mov %%cr4, %0" : "=r"(cr4));            \
+		printk("CR0: 0x%016lx\n", cr0);                       \
 		printk("CR2: 0x%016lx\n", cr2);                       \
 		printk("CR3: 0x%016lx\n", cr3);                       \
 		printk("CR4: 0x%016lx\n", cr4);                       \

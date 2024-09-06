@@ -11,5 +11,5 @@ struct smp_info {
 };
 #endif
 
-void port_init_bsp(cpudata_t *bsp_data);
-void port_data_common_init(cpudata_t *data);
+void early_port_bsp_init(cpudata_t *bsp_data);
+void early_port_cpu_common_init(cpudata_t *data);

@@ -65,7 +65,7 @@ static const char *kmalloc_names[] = {
 static kmem_cache_t *kmalloc_caches[elementsof(kmalloc_sizes)];
 #define KMALLOC_MAX 2048
 
-void kmem_init()
+void va_kernel_init()
 {
 	vmem_bootstrap();
 	vmem_init(&vmem_va, "kernel-va", (void *)MEM_KERNEL_START,
@@ -77,7 +77,10 @@ void kmem_init()
 	printk(INFO "created kernel VA arena (%p-%p)\n",
 	       (void *)MEM_KERNEL_START,
 	       (void *)(MEM_KERNEL_START + MEM_KERNEL_SIZE));
+}
 
+void kmem_init()
+{
 	kmem_slab_init();
 
 	for (int i = 0; i < elementsof(kmalloc_sizes); i++) {

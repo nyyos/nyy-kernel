@@ -47,11 +47,14 @@ static void dpc_reschedule_interval(dpc_t *, void *, void *)
 	sched_reschedule();
 }
 
+void sched_kmem_init()
+{
+	thread_cache = kmem_cache_create("thread_t", sizeof(thread_t), 0, NULL,
+					 NULL, NULL, 0);
+}
+
 void sched_init()
 {
-	if (thread_cache == nullptr)
-		thread_cache = kmem_cache_create("thread_t", sizeof(thread_t),
-						 0, NULL, NULL, NULL, 0);
 	TAILQ_INIT(&done_queue);
 
 	scheduler_t *lsp = lsched();
@@ -79,7 +82,7 @@ void port_initialize_context(context_t *context, int user, void *kstack,
 		context->ss = kGdtKernelData * 8;
 	}
 
-	uint64_t *sp = kstack;
+	uint64_t *sp = (uint64_t *)((uintptr_t)kstack + KSTACK_SIZE);
 	sp -= 2;
 	*sp = (uint64_t)thread_trampoline;
 	context->rsp = (uint64_t)sp;
@@ -99,13 +102,14 @@ void sched_init_thread(thread_t *thread, thread_start_fn ip, int priority,
 		       void *context1, void *context2)
 {
 	memset(thread, 0x0, sizeof(thread_t));
-	void *kstack_base = vm_kalloc(4, 0);
+	void *kstack_base = vm_kalloc(KSTACK_SIZE / PAGE_SIZE, 0);
 	assert(kstack_base);
-	void *kstack = (void *)((uintptr_t)kstack_base + 4 * PAGE_SIZE);
-	port_initialize_context(&thread->context, 0, kstack, ip, context1,
+	void *kstack = (void *)((uintptr_t)kstack_base + KSTACK_SIZE);
+	port_initialize_context(&thread->context, 0, kstack_base, ip, context1,
 				context2);
 	thread->state = kThreadStateNull;
 	thread->priority = priority;
+	thread->kstack_top = kstack;
 	SPINLOCK_INIT(&thread->thread_lock);
 }
 
@@ -238,11 +242,12 @@ void sched_yield(thread_t *current)
 	sched_switch_thread(current, next);
 }
 
-void sched_jump_into_idle_thread()
+[[gnu::noreturn]] void sched_jump_into_idle_thread()
 {
 	thread_t *idlethread = &cpudata()->idle_thread;
 	cpudata()->thread_current = idlethread;
 	asm_jumpstart(idlethread);
+	__builtin_unreachable();
 }
 
 [[gnu::noreturn]] void sched_exit_destroy()

@@ -1,3 +1,5 @@
+kernel_sources += files('main.c')
+
 subdir('lib')
 subdir('vm')
 subdir('irq')

@@ -5,6 +5,7 @@
 #include <sys/queue.h>
 #include <ndk/ndk.h>
 #include <ndk/port.h>
+#include <ndk/time.h>
 
 enum {
 	kPriorityIdle = 0,
@@ -17,31 +18,55 @@ enum {
 	PRIORITY_COUNT = 16
 };
 
-typedef struct task {
-	context_t *context;
-	spinlock_t task_lock;
+enum {
+	kThreadStateNull,
+	kThreadStateReady,
+	kThreadStateRunning,
+	kThreadStateWaiting,
+	kThreadStateDone,
+};
 
+typedef struct thread {
+	context_t context;
+	spinlock_t thread_lock;
+
+	void *kstack_top;
+
+	int state;
 	int priority;
 
-	TAILQ_ENTRY(task) entry;
-} task_t;
+	TAILQ_ENTRY(thread) entry;
+} thread_t;
 
-static_assert(offsetof(struct task, context) == 0);
-static_assert(offsetof(struct task, task_lock) == 8);
+static_assert(offsetof(struct thread, thread_lock) == sizeof(context_t));
 
-typedef TAILQ_HEAD(, task) task_queue_t;
+typedef TAILQ_HEAD(, thread) thread_queue_t;
 
 typedef struct scheduler {
-	task_queue_t task_queues[PRIORITY_COUNT];
+	thread_queue_t run_queues[PRIORITY_COUNT];
 	spinlock_t sched_lock;
+
+	dpc_t reschedule_dpc_timer;
+	timer_t preemption_timer;
 } scheduler_t;
 
 void sched_init();
-void sched_enqueue(task_t *task);
+void sched_kmem_init();
+void sched_reschedule();
+void sched_resume(thread_t *task);
 void sched_preempt();
+void sched_yield(thread_t *current);
 
-typedef void(task_start_fn)(void *, void *);
+[[gnu::noreturn]] void sched_jump_into_idle_thread();
 
-task_t *sched_create_task(task_start_fn startfn, int priority, void *context1,
-			  void *context2);
-void sched_destroy_task(task_t *task);
+typedef void(thread_start_fn)(void *, void *);
+
+thread_t *sched_alloc_thread();
+void sched_destroy_thread(thread_t *task);
+
+void sched_init_thread(thread_t *thread, thread_start_fn startfn, int priority,
+		       void *context1, void *context2);
+
+[[gnu::noreturn]] void sched_exit_destroy();
+
+thread_t *curthread();

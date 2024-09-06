@@ -2,10 +2,13 @@
 
 #include <ndk/addr.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #include "gdt.h"
 
 #define PAGE_SIZE 0x1000
+
+#define KSTACK_SIZE PAGE_SIZE * 4
 
 #define MEM_HHDM_START 0xFFFF800000000000L
 #define MEM_KERNEL_START 0xFFFFE00000000000L
@@ -55,6 +58,14 @@ typedef struct [[gnu::packed]] context {
 	uint64_t ss;
 } context_t;
 
+static_assert(offsetof(context_t, rbx) == 8);
+static_assert(offsetof(context_t, r12) == 80);
+static_assert(offsetof(context_t, r13) == 88);
+static_assert(offsetof(context_t, r14) == 96);
+static_assert(offsetof(context_t, r15) == 104);
+static_assert(offsetof(context_t, rbp) == 112);
+static_assert(offsetof(context_t, rsp) == 144);
+
 // XXX: FP state
 
 #define STATE_SP(state) (state)->rsp
@@ -92,6 +103,13 @@ static inline void port_enable_ints()
 static inline void port_disable_ints()
 {
 	asm volatile("cli");
+}
+
+static inline int port_int_state()
+{
+	uint64_t flags;
+	asm volatile("pushfq; pop %0" : "=rm"(flags)::"memory");
+	return flags & (1 << 9);
 }
 
 static inline int port_set_ints(int state)

@@ -24,7 +24,7 @@ static const char *panic_art =
 	"                                                           \n"
 	"";
 
-[[gnu::noreturn]] void panic(const char *msg)
+[[gnu::noreturn]] void panic_withstack(const char *msg, uintptr_t stack)
 {
 	_printk_consoles_write(panic_art, strlen(panic_art));
 	printk(PANIC "%s\n", msg);
@@ -34,7 +34,7 @@ static const char *panic_art =
 	printk("\nStacktrace:\n");
 
 	uint64_t *rbp, *rip;
-	asm volatile("mov %%rbp, %0" : "=r"(rbp));
+	rbp = (uint64_t *)stack;
 	while (rbp) {
 		rip = rbp + 1;
 		if (!rip || *rip == 0)
@@ -53,6 +53,14 @@ static const char *panic_art =
 
 	printk("\n");
 
+	port_disable_ints();
 	hcf();
 	__builtin_trap();
+}
+
+[[gnu::noreturn]] void panic(const char *msg)
+{
+	uintptr_t rbp;
+	asm volatile("mov %%rbp, %0" : "=r"(rbp));
+	panic_withstack(msg, rbp);
 }

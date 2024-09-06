@@ -12,7 +12,6 @@
 #include "apic.h"
 #include "gdt.h"
 #include "idt.h"
-#include "early_acpi.h"
 #include "hpet.h"
 
 cpu_features_t g_features;
@@ -63,14 +62,14 @@ static console_t serial_console = {
 	.write = serial_write,
 };
 
-void _port_init_boot_consoles()
+void limine_bootconsoles_init()
 {
 	serial_init();
 	console_add(&serial_console);
 }
 #endif
 
-void port_init_bsp(cpudata_t *bsp_data)
+void early_port_bsp_init(cpudata_t *bsp_data)
 {
 	cpu_gdt_init();
 	cpu_idt_init();
@@ -125,9 +124,17 @@ static void port_init_cpu()
 	// enable NX
 	if (g_features.nx)
 		wrmsr(kMsrEfer, rdmsr(kMsrEfer) | (1 << 11));
+
+	assert(g_features.pat == 1);
+
+#if 0
+	printk("cpu features:\n\t1gb pages:%d\n\tNX:%d\n\tGlobal pages:%d\n\tPAT:%d\n\tPCID:%d\n",
+	       g_features.gbpages, g_features.nx, g_features.pge,
+	       g_features.pat, g_features.pcid);
+#endif
 }
 
-void port_data_common_init(cpudata_t *data)
+void early_port_cpu_common_init(cpudata_t *data)
 {
 	cpu_gdt_load();
 	cpu_idt_load();
@@ -137,14 +144,12 @@ void port_data_common_init(cpudata_t *data)
 	port_init_cpu();
 }
 
-extern void core_spinup();
-
 void port_smp_entry(struct limine_smp_info *info)
 {
 	struct smp_info *nyy_info = (struct smp_info *)info->extra_argument;
 
 	cpudata_t *localdata = &nyy_info->data;
-	port_data_common_init(localdata);
+	early_port_cpu_common_init(localdata);
 	localdata->port_data.lapic_id = info->lapic_id;
 
 	vm_port_activate(vm_kmap());
@@ -157,19 +162,11 @@ void port_smp_entry(struct limine_smp_info *info)
 	bool ready = true;
 	__atomic_store(&nyy_info->ready, &ready, __ATOMIC_RELEASE);
 
-	core_spinup();
+	sched_jump_into_idle_thread();
 }
-
-#define LIMINE_REQ __attribute__((used, section(".requests")))
-
-LIMINE_REQ static volatile struct limine_rsdp_request rsdp_request = {
-	.id = LIMINE_RSDP_REQUEST,
-	.revision = 0
-};
 
 void port_scheduler_init()
 {
-	acpi_early_set_rsdp(rsdp_request.response->address);
 	assert(hpet_init() == 0);
 	// init fallback clocks before apic_init
 	apic_init();

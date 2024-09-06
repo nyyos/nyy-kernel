@@ -83,3 +83,4 @@ void _printk_consoles_write(const char *buf, size_t size);
 void _printk_init();
 
 [[gnu::noreturn]] void panic(const char *msg);
+[[gnu::noreturn]] void panic_withstack(const char *msg, uintptr_t stack);
