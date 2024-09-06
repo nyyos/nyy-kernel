@@ -58,6 +58,19 @@ static inline void spinlock_release_lower(spinlock_t *spinlock, irql_t old)
 	return old;
 }
 
+static inline int spinlock_acquire_intr(spinlock_t *spinlock)
+{
+	int old = port_set_ints(0);
+	spinlock_acquire(spinlock);
+	return old;
+}
+
+static inline void spinlock_release_intr(spinlock_t *spinlock, int old)
+{
+	spinlock_release(spinlock);
+	port_set_ints(old);
+}
+
 #define INFO "\1"
 #define WARN "\2"
 #define ERR "\3"
