@@ -1,4 +1,3 @@
-#include "ndk/sched.h"
 #include <limine.h>
 
 #include <nyyconf.h>

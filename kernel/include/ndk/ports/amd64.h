@@ -26,7 +26,7 @@ typedef struct cpudata_port {
 [[gnu::noreturn]] static inline void hcf()
 {
 	for (;;) {
-		asm volatile("cli;hlt");
+		asm volatile("hlt");
 	}
 }
 
@@ -76,18 +76,6 @@ static_assert(offsetof(context_t, rsp) == 144);
 #define STATE_ARG4(state) (state)->rcx
 #define STATE_ARG5(state) (state)->r8
 #define STATE_ARG6(state) (state)->r9
-
-static inline void port_init_state(context_t *state, int user)
-{
-	state->rflags = 0x200;
-	if (user != 0) {
-		state->cs = kGdtUserCode * 8;
-		state->ss = kGdtUserData * 8;
-	} else {
-		state->cs = kGdtKernelCode * 8;
-		state->ss = kGdtKernelData * 8;
-	}
-}
 
 #define ARCH_HAS_SPIN_HINT
 static inline void port_spin_hint()
