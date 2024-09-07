@@ -111,6 +111,8 @@ void *kcalloc(size_t count, size_t size)
 
 void kfree(void *ptr, size_t size)
 {
+	if (ptr == nullptr)
+		return;
 	for (int i = 0; i < elementsof(kmalloc_sizes); i++) {
 		if (size <= kmalloc_sizes[i]) {
 			kmem_cache_free(kmalloc_caches[i], ptr);

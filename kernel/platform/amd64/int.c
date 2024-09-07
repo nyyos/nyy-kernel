@@ -128,7 +128,7 @@ void handle_pf(context_t *frame, uint64_t error_code)
 	}
 
 	printk("\n");
-	panic("page fault not handled\n");
+	panic_withstack("page fault not handled\n", frame->rbp);
 }
 
 void handle_fault(context_t *frame, int number, uint64_t error_code)

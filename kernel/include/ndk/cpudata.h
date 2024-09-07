@@ -8,7 +8,11 @@
 #include <ndk/time.h>
 
 typedef struct cpudata {
+	// THIS ABSOLUTELY MUST REMAIN FIRST ELEMENT!
 	cpudata_port_t port_data;
+
+	uint16_t cpu_id;
+
 	uint64_t softint_pending;
 	dpc_queue_t dpc_queue;
 	bool bsp;
@@ -20,8 +24,8 @@ typedef struct cpudata {
 	thread_t *thread_next;
 
 	timer_engine_t timer_engine;
-	uint64_t next_deadline;
 	dpc_t timer_update;
+	uint64_t next_deadline;
 } cpudata_t;
 
 void cpudata_setup(cpudata_t *cpudata);

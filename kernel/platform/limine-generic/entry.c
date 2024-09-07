@@ -117,7 +117,6 @@ void early_fb_write(console_t *console, const char *buf, size_t size)
 }
 
 static early_fb_console_t early_fb_console;
-
 static void early_fb_init()
 {
 	struct limine_framebuffer_response *res = fb_request.response;
@@ -142,10 +141,6 @@ static void early_fb_init()
 {
 }
 
-[[gnu::weak]] void port_scheduler_init()
-{
-}
-
 static void consume_modules()
 {
 	struct limine_module_response *res = module_request.response;
@@ -156,71 +151,6 @@ static void consume_modules()
 			symbols_parse_map(module->address, module->size);
 		}
 	}
-}
-
-static int n = 0;
-
-void test_kthread(void *, void *)
-{
-	int i = n++;
-	for (;;) {
-		printk("low prio thread %d running\n", i);
-		asm volatile("hlt");
-		//printk(DEBUG "IN KTHREAD %d\n", i);
-	}
-	__builtin_trap();
-}
-
-void test_kthread_2(void *, void *)
-{
-	int j = n++;
-	for (int i = 0; i < 3; i++) {
-		printk("high prio thread %d running\n", j);
-		asm volatile("hlt");
-	}
-	sched_exit_destroy();
-}
-
-#if 0
-void print_uptime()
-{
-	int seconds_uptime = NS2MS(clocksource()->current_nanos()) / 1000;
-	int hours = seconds_uptime / 3600;
-	int minutes = (seconds_uptime - hours * 3600) / 60;
-	int seconds = seconds_uptime - minutes * 60 - hours * 3600;
-	printk("\r>> uptime: %02d:%02d:%02d", hours, minutes, seconds);
-}
-#endif
-
-void idle_thread_fn(void *, void *)
-{
-	assert(port_int_state() != 0);
-	for (;;) {
-		printk(INFO "cpu %ld is idle\n", cpudata()->port_data.lapic_id);
-		port_wait_nextint();
-	}
-}
-
-void start_threads(void *, void *)
-{
-	sched_exit_destroy();
-}
-
-void kickstart_main(void *, void *)
-{
-	thread_t testthread;
-	sched_init_thread(&testthread, start_threads, kPriorityHigh + 1, NULL,
-			  NULL);
-
-	timer_initialize(&cpudata()->scheduler.preemption_timer, MS2NS(1000),
-			 &cpudata()->scheduler.reschedule_dpc_timer,
-			 kTimerPeriodicMode);
-	timer_install(&cpudata()->scheduler.preemption_timer, NULL, NULL);
-
-	sched_resume(&testthread);
-
-	// become the idle thread
-	idle_thread_fn(NULL, NULL);
 }
 
 extern void kmain();
@@ -320,20 +250,13 @@ void early_port_post_kmem()
 
 uintptr_t early_port_get_rsdp()
 {
-	struct limine_rsdp_response res;
+	struct limine_rsdp_response *res = rsdp_request.response;
+	return (uintptr_t)res->address - REAL_HHDM_START.addr;
 }
 
 void limine_entry(void)
 {
 	REAL_HHDM_START = PADDR(hhdm_request.response->offset);
 	kmain();
-
-	port_scheduler_init();
-
-	assert(clocksource());
-
-	sched_init_thread(&cpudata()->idle_thread, kickstart_main,
-			  kPriorityIdle, NULL, NULL);
-
-	sched_jump_into_idle_thread();
+	__builtin_trap();
 }

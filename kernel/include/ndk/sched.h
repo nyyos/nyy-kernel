@@ -24,6 +24,7 @@ enum {
 	kThreadStateRunning,
 	kThreadStateWaiting,
 	kThreadStateDone,
+	kThreadStateStandby,
 };
 
 typedef struct thread {
@@ -32,6 +33,10 @@ typedef struct thread {
 
 	void *kstack_top;
 
+	dpc_t wakeup_dpc;
+	timer_t sleep_timer;
+
+	int timeslice; // in ms
 	int state;
 	int priority;
 
@@ -44,18 +49,20 @@ typedef TAILQ_HEAD(, thread) thread_queue_t;
 
 typedef struct scheduler {
 	thread_queue_t run_queues[PRIORITY_COUNT];
-	spinlock_t sched_lock;
+	unsigned int queue_entries[PRIORITY_COUNT];
 
-	dpc_t reschedule_dpc_timer;
+	spinlock_t sched_lock;
+	dpc_t preemption_dpc;
 	timer_t preemption_timer;
 } scheduler_t;
 
-void sched_init();
+void sched_init(scheduler_t *sched);
 void sched_kmem_init();
 void sched_reschedule();
 void sched_resume(thread_t *task);
 void sched_preempt();
-void sched_yield(thread_t *current);
+void sched_yield();
+void sched_sleep(uint64_t ns);
 
 [[gnu::noreturn]] void sched_jump_into_idle_thread();
 

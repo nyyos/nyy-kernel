@@ -16,7 +16,13 @@ static kmem_cache_t *thread_cache = nullptr;
 static spinlock_t done_lock;
 static thread_queue_t done_queue;
 
-static void done_queue_dpc(dpc_t *, void *, void *)
+extern void asm_switch_context(thread_t *new, thread_t *old);
+extern void asm_jumpstart(thread_t *new);
+extern void port_initialize_context(context_t *context, int user, void *kstack,
+				    thread_start_fn startfn, void *context1,
+				    void *context2);
+
+void done_queue_fn(dpc_t *, void *, void *)
 {
 	int old = port_set_ints(0);
 	if (!spinlock_try_lock(&done_lock))
@@ -35,14 +41,11 @@ static inline scheduler_t *lsched()
 	return &cpudata()->scheduler;
 }
 
-extern void asm_switch_context(thread_t *new, thread_t *old);
-extern void asm_jumpstart(thread_t *new);
-
 void port_initialize_context(context_t *context, int user, void *kstack,
 			     thread_start_fn startfn, void *context1,
 			     void *context2);
 
-static void dpc_reschedule_interval(dpc_t *, void *, void *)
+void preemption_dpc_fn(dpc_t *, void *, void *)
 {
 	sched_reschedule();
 }
@@ -53,42 +56,18 @@ void sched_kmem_init()
 					 NULL, NULL, 0);
 }
 
-void sched_init()
+void sched_init(scheduler_t *sched)
 {
 	TAILQ_INIT(&done_queue);
-
-	scheduler_t *lsp = lsched();
-	SPINLOCK_INIT(&lsp->sched_lock);
+	SPINLOCK_INIT(&done_lock);
+	SPINLOCK_INIT(&sched->sched_lock);
 	for (int i = 0; i < PRIORITY_COUNT; i++) {
-		TAILQ_INIT(&lsp->run_queues[i]);
+		TAILQ_INIT(&sched->run_queues[i]);
 	}
 
-	dpc_init(&lsp->reschedule_dpc_timer, dpc_reschedule_interval);
-	dpc_init(&cpudata()->done_queue_dpc, done_queue_dpc);
-}
-
-extern void thread_trampoline();
-
-void port_initialize_context(context_t *context, int user, void *kstack,
-			     thread_start_fn startfn, void *context1,
-			     void *context2)
-{
-	context->rflags = 0x200;
-	if (user != 0) {
-		context->cs = kGdtUserCode * 8;
-		context->ss = kGdtUserData * 8;
-	} else {
-		context->cs = kGdtKernelCode * 8;
-		context->ss = kGdtKernelData * 8;
-	}
-
-	uint64_t *sp = (uint64_t *)((uintptr_t)kstack + KSTACK_SIZE);
-	sp -= 2;
-	*sp = (uint64_t)thread_trampoline;
-	context->rsp = (uint64_t)sp;
-	context->r12 = (uint64_t)startfn;
-	context->r13 = (uint64_t)context1;
-	context->r14 = (uint64_t)context2;
+	dpc_init(&sched->preemption_dpc, preemption_dpc_fn);
+	timer_initialize(&sched->preemption_timer, MS2NS(1000),
+			 &sched->preemption_dpc, kTimerOneshotMode);
 }
 
 thread_t *sched_alloc_thread()
@@ -96,6 +75,12 @@ thread_t *sched_alloc_thread()
 	thread_t *thread = kmem_cache_alloc(thread_cache, 0);
 	assert(thread);
 	return thread;
+}
+
+void wake_thread(dpc_t *, void *context1, void *)
+{
+	thread_t *thread = context1;
+	sched_resume(thread);
 }
 
 void sched_init_thread(thread_t *thread, thread_start_fn ip, int priority,
@@ -110,6 +95,10 @@ void sched_init_thread(thread_t *thread, thread_start_fn ip, int priority,
 	thread->state = kThreadStateNull;
 	thread->priority = priority;
 	thread->kstack_top = kstack;
+	thread->timeslice = 30;
+	dpc_init(&thread->wakeup_dpc, wake_thread);
+	timer_initialize(&thread->sleep_timer, -1, &thread->wakeup_dpc,
+			 kTimerOneshotMode);
 	SPINLOCK_INIT(&thread->thread_lock);
 }
 
@@ -118,11 +107,25 @@ void sched_destroy_thread(thread_t *thread)
 	assert(!"todo");
 }
 
+static void check_timer(thread_t *thread, scheduler_t *sched)
+{
+	if (sched->queue_entries[thread->priority] > 0) {
+		timer_reset_in(&sched->preemption_timer,
+			       MS2NS(thread->timeslice));
+		timer_install(&sched->preemption_timer, NULL, NULL);
+	} else {
+		timer_uninstall(&sched->preemption_timer, 0);
+	}
+}
+
 // sched lock held
 // thread lock held
 static void sched_insert(scheduler_t *sched, thread_t *thread)
 {
 	thread_t *current, *next, *compare;
+
+	thread->state = kThreadStateReady;
+
 	current = cpudata()->thread_current;
 	next = cpudata()->thread_next;
 
@@ -132,12 +135,14 @@ static void sched_insert(scheduler_t *sched, thread_t *thread)
 
 	// XXX: check if thread should preempt correctly
 
-	if (compare != &cpudata()->idle_thread) {
-		compare->state = kThreadStateReady;
+	if (compare->priority >= thread->priority) {
 		thread_queue_t *qp = &sched->run_queues[thread->priority];
+		sched->queue_entries[thread->priority]++;
 		TAILQ_INSERT_TAIL(qp, thread, entry);
 		return;
 	}
+
+	thread->state = kThreadStateStandby;
 
 	// preempt
 	cpudata()->thread_next = thread;
@@ -150,20 +155,14 @@ static void sched_insert(scheduler_t *sched, thread_t *thread)
 static thread_t *sched_next(int priority)
 {
 	scheduler_t *sched = lsched();
-#if 0
-	printk("queue state:");
-	for (int i = 0; i < PRIORITY_COUNT; i++) {
-		thread_queue_t *qp = &sched->run_queues[i];
-		printk("%d", TAILQ_EMPTY(qp) ? 0 : 1);
-	}
-	printk("\n");
-#endif
 	for (int i = PRIORITY_COUNT; i >= priority; i--) {
 		thread_queue_t *qp = &sched->run_queues[i - 1];
 		if (TAILQ_EMPTY(qp))
 			continue;
 		thread_t *tp = TAILQ_FIRST(qp);
 		TAILQ_REMOVE(qp, tp, entry);
+		check_timer(tp, sched);
+		sched->queue_entries[tp->priority]--;
 		return tp;
 	}
 	return nullptr;
@@ -199,6 +198,7 @@ void sched_switch_thread(thread_t *current, thread_t *thread)
 // - current thread lock held
 void sched_preempt()
 {
+	//printk("%s called\n", __func__);
 	cpudata_t *cpu = cpudata();
 	scheduler_t *sched = lsched();
 
@@ -213,6 +213,7 @@ void sched_preempt()
 
 	if (current != &cpu->idle_thread) {
 		spinlock_acquire(&sched->sched_lock);
+		//printk("insert current: %p\n", current);
 		sched_insert(sched, current);
 		spinlock_release(&sched->sched_lock);
 	}
@@ -222,6 +223,10 @@ void sched_preempt()
 
 void sched_resume(thread_t *thread)
 {
+	if (thread->state == kThreadStateReady) {
+		printk(ERR "THREAD STATE ALREADY READY\n");
+		return;
+	}
 	irql_t old = spinlock_acquire_raise(&thread->thread_lock);
 	scheduler_t *sched = lsched();
 	spinlock_acquire(&sched->sched_lock);
@@ -230,7 +235,7 @@ void sched_resume(thread_t *thread)
 	spinlock_release_lower(&thread->thread_lock, old);
 }
 
-void sched_yield(thread_t *current)
+static void sched_yield_internal(thread_t *current)
 {
 	scheduler_t *sched = lsched();
 	spinlock_acquire(&sched->sched_lock);
@@ -240,6 +245,13 @@ void sched_yield(thread_t *current)
 		next = &cpudata()->idle_thread;
 	}
 	sched_switch_thread(current, next);
+}
+
+void sched_yield()
+{
+	thread_t *current = curthread();
+	spinlock_acquire(&current->thread_lock);
+	sched_yield_internal(current);
 }
 
 [[gnu::noreturn]] void sched_jump_into_idle_thread()
@@ -258,7 +270,7 @@ void sched_yield(thread_t *current)
 	TAILQ_INSERT_TAIL(&done_queue, curthread(), entry);
 	spinlock_acquire(&current->thread_lock);
 	spinlock_release(&done_lock);
-	sched_yield(current);
+	sched_yield_internal(current);
 	// this should never happen
 	assert(!"yield returned to thread after exit_destroy\n");
 }
@@ -266,4 +278,13 @@ void sched_yield(thread_t *current)
 thread_t *curthread()
 {
 	return cpudata()->thread_current;
+}
+
+void sched_sleep(uint64_t ns)
+{
+	thread_t *thread = curthread();
+	timer_reset_in(&thread->sleep_timer, ns);
+	timer_install(&thread->sleep_timer, thread, NULL);
+	thread->state = kThreadStateWaiting;
+	sched_yield();
 }

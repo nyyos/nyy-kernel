@@ -1,11 +1,9 @@
 #include <string.h>
-#include <uacpi/acpi.h>
-
 #include <ndk/vm.h>
 #include <ndk/time.h>
-
+#include <uacpi/acpi.h>
+#include <uacpi/tables.h>
 #include "hpet.h"
-#include "early_acpi.h"
 
 typedef struct hpet {
 	uintptr_t addr;
@@ -65,17 +63,17 @@ clocksource_t hpet_clocksource = {
 
 int hpet_init()
 {
-	struct acpi_hpet *hpet_table = acpi_early_find("HPET");
-	if (!hpet_table)
+	uacpi_table tbl;
+	struct acpi_hpet *table;
+	if (uacpi_table_find_by_signature("HPET", &tbl) != UACPI_STATUS_OK)
 		return 1;
+	table = tbl.ptr;
 
 	memset(&g_hpet, 0x0, sizeof(hpet_t));
 	g_hpet.addr = (uintptr_t)vm_map_allocate(vm_kmap(), PAGE_SIZE);
-	vm_port_map(vm_kmap(),
-		    PADDR(PAGE_ALIGN_DOWN(hpet_table->address.address)),
+	vm_port_map(vm_kmap(), PADDR(PAGE_ALIGN_DOWN(table->address.address)),
 		    VADDR(g_hpet.addr), kVmUncached, kVmRead | kVmWrite);
-
-	g_hpet.minimum_clock_ticks = hpet_table->min_clock_tick;
+	g_hpet.minimum_clock_ticks = table->min_clock_tick;
 	g_hpet.period = hpet_read(HPET_REG_GENERAL_CAPABILITY) >> 32;
 
 	hpet_enable();

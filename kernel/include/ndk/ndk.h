@@ -80,7 +80,7 @@ static inline void spinlock_release_intr(spinlock_t *spinlock, int old)
 __attribute__((format(printf, 1, 2))) void printk(const char *fmt, ...);
 __attribute__((format(printf, 1, 2))) void printk_locked(const char *fmt, ...);
 void _printk_consoles_write(const char *buf, size_t size);
-void _printk_init();
+void printk_init();
 
 [[gnu::noreturn]] void panic(const char *msg);
 [[gnu::noreturn]] void panic_withstack(const char *msg, uintptr_t stack);

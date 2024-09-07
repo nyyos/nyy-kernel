@@ -1,8 +1,8 @@
-#include "ndk/sched.h"
 #include <ndk/int.h>
 #include <ndk/ndk.h>
 #include <ndk/dpc.h>
 #include <ndk/cpudata.h>
+#include <ndk/sched.h>
 
 #define PENDING(irql) ((1 << ((irql) - 1)))
 

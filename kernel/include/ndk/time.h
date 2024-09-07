@@ -72,9 +72,6 @@ void time_init();
 void time_engine_init(timer_engine_t *ep, clocksource_t *csp,
 		      void (*arm)(uint64_t));
 
-timer_engine_t *gp_engine();
-void set_gp_engine(timer_engine_t *ep);
-
 timer_t *timer_allocate();
 void timer_free(timer_t *timer);
 

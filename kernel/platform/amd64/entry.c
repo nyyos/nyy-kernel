@@ -110,6 +110,7 @@ void port_pat_setup()
 
 static void port_init_cpu()
 {
+	assert(g_features.pat == 1);
 	port_pat_setup();
 	uint64_t cr0 = read_cr0();
 	// clear CD and NW
@@ -124,8 +125,6 @@ static void port_init_cpu()
 	// enable NX
 	if (g_features.nx)
 		wrmsr(kMsrEfer, rdmsr(kMsrEfer) | (1 << 11));
-
-	assert(g_features.pat == 1);
 
 #if 0
 	printk("cpu features:\n\t1gb pages:%d\n\tNX:%d\n\tGlobal pages:%d\n\tPAT:%d\n\tPCID:%d\n",
@@ -144,6 +143,8 @@ void early_port_cpu_common_init(cpudata_t *data)
 	port_init_cpu();
 }
 
+extern void idle_thread_fn(void *, void *);
+
 void port_smp_entry(struct limine_smp_info *info)
 {
 	struct smp_info *nyy_info = (struct smp_info *)info->extra_argument;
@@ -156,23 +157,22 @@ void port_smp_entry(struct limine_smp_info *info)
 
 	apic_enable();
 
-	// XXX: make this the idle thread of the cpu
 	printk(INFO "entered kernel on core %d\n", info->lapic_id);
 
 	bool ready = true;
 	__atomic_store(&nyy_info->ready, &ready, __ATOMIC_RELEASE);
 
+	sched_init_thread(&cpudata()->idle_thread, idle_thread_fn, 0, NULL,
+			  NULL);
+
 	sched_jump_into_idle_thread();
 }
 
-void port_scheduler_init()
+void early_port_post_acpi()
 {
-	assert(hpet_init() == 0);
-	// init fallback clocks before apic_init
+	int res = hpet_init();
+	// XXX: fallback clocksources
+	assert(res == 0);
 	apic_init();
 	apic_enable();
-
-	char vendor[13];
-	cpuid_vendor(vendor);
-	printk(DEBUG "CPU vendor: %s\n", vendor);
 }

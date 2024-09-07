@@ -163,7 +163,7 @@ void apic_enable()
 	// send spurious interrupts to 0xFF, enable APIC
 	apic_write(APIC_REG_SPURIOUS, (1 << 8) | 0xFF);
 
-	cpudata()->port_data.lapic_id = apic_read(APIC_REG_ID);
+	cpudata()->port_data.lapic_id = apic_id();
 
 	apic_timer_calibrate();
 	time_engine_init(&cpudata()->timer_engine, clocksource(), apic_arm);

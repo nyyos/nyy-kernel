@@ -28,15 +28,39 @@ static inline uint64_t rdmsr(uint32_t index)
 	return ((uint64_t)high << 32) | (uint64_t)low;
 }
 
-static inline void outb(uint16_t port, uint8_t val)
+static inline void outb(uint16_t port, uint8_t data)
 {
-	asm volatile("outb %b0, %w1" : : "a"(val), "Nd"(port) : "memory");
+	asm volatile("out %%al, %%dx" : : "a"(data), "d"(port));
+}
+
+static inline void outw(uint16_t port, uint16_t data)
+{
+	asm volatile("out %%ax, %%dx" : : "a"(data), "d"(port));
+}
+
+static inline void outd(uint16_t port, uint32_t data)
+{
+	asm volatile("out %%eax, %%dx" : : "a"(data), "d"(port));
 }
 
 static inline uint8_t inb(uint16_t port)
 {
 	uint8_t ret;
-	__asm__ volatile("inb %w1, %b0" : "=a"(ret) : "Nd"(port) : "memory");
+	asm volatile("in %%dx, %%al" : "=a"(ret) : "d"(port));
+	return ret;
+}
+
+static inline uint16_t inw(uint16_t port)
+{
+	uint16_t ret;
+	asm volatile("in %%dx, %%ax" : "=a"(ret) : "d"(port));
+	return ret;
+}
+
+static inline uint32_t ind(uint32_t port)
+{
+	uint32_t ret;
+	asm volatile("in %%dx, %%eax" : "=a"(ret) : "d"(port));
 	return ret;
 }
 

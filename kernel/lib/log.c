@@ -8,6 +8,7 @@
 #include <nanoprintf.h>
 
 #include <stdarg.h>
+#include <assert.h>
 #include <string.h>
 #include <sys/queue.h>
 #include <ndk/ndk.h>
@@ -53,20 +54,17 @@ void logbuffer_write(logbuffer_t *lb, const char *str, size_t size)
 {
 	uint32_t head, next_head, tail;
 
-	do {
-		head = __atomic_load_n(&lb->head, __ATOMIC_RELAXED);
-		next_head = (head + 1) & (MSGS_SIZE - 1);
-		tail = __atomic_load_n(&lb->tail, __ATOMIC_ACQUIRE);
+	head = lb->head;
+	next_head = (head + 1) & (MSGS_SIZE - 1);
+	tail = lb->tail;
 
-		if (next_head == tail)
-			return;
+	if (next_head == tail)
+		return;
 
-	} while (!__atomic_compare_exchange_n(&lb->head, &head, next_head, 1,
-					      __ATOMIC_RELEASE,
-					      __ATOMIC_RELAXED));
+	lb->head = next_head;
 
 	logmessage_t *msg = &lb->messages[head];
-	// XXX: size check
+	assert(size < MSG_BUF_SIZE);
 	memcpy(msg->buf, str, size);
 	msg->buf[size] = '\0';
 	msg->msg_sz = size;
@@ -74,32 +72,27 @@ void logbuffer_write(logbuffer_t *lb, const char *str, size_t size)
 
 logmessage_t *logbuffer_read(logbuffer_t *lb)
 {
-	uint32_t tail, head, next_tail;
-
-	do {
-		tail = __atomic_load_n(&lb->tail, __ATOMIC_RELAXED);
-		head = __atomic_load_n(&lb->head, __ATOMIC_ACQUIRE);
-
-		if (tail == head)
-			return NULL;
-
-		next_tail = (tail + 1) & (MSGS_SIZE - 1);
-	} while (!__atomic_compare_exchange_n(&lb->tail, &tail, next_tail, 1,
-					      __ATOMIC_RELEASE,
-					      __ATOMIC_RELAXED));
+	uint32_t tail, next_tail, head;
+	tail = lb->tail;
+	head = lb->head;
+	next_tail = (tail + 1) & (MSGS_SIZE - 1);
+	if (tail == head)
+		return nullptr;
+	lb->tail = next_tail;
 
 	return &lb->messages[tail];
 }
 
 static logbuffer_t g_lb;
 
-void _printk_init()
+void printk_init()
 {
 	logbuffer_init(&g_lb);
 }
 
 void _printk_consoles_write(const char *buf, size_t size)
 {
+	int old = spinlock_acquire_intr(&console_list_lock);
 	console_t *elm = nullptr;
 	TAILQ_FOREACH(elm, &console_list, queue_entry)
 	{
@@ -109,6 +102,7 @@ void _printk_consoles_write(const char *buf, size_t size)
 		elm->write(elm, buf, size);
 		spinlock_release_intr(&elm->spinlock, old);
 	}
+	spinlock_release_intr(&console_list_lock, old);
 }
 
 static void _printk_buffer_write(logbuffer_t *lb)
@@ -119,9 +113,10 @@ static void _printk_buffer_write(logbuffer_t *lb)
 	}
 }
 
+static spinlock_t print_lock = SPINLOCK_INITIALIZER();
+
 [[clang::no_sanitize("undefined")]] void printk(const char *fmt, ...)
 {
-	int oldstate = port_set_ints(0);
 	va_list args;
 	va_start(args, fmt);
 
@@ -161,13 +156,15 @@ static void _printk_buffer_write(logbuffer_t *lb)
 		size = 0;
 	}
 
+	int oldstate = spinlock_acquire_intr(&print_lock);
 	size += npf_vsnprintf(buf + size, MSG_BUF_SIZE - size, fmt, args);
 	logbuffer_write(&g_lb, buf, size);
 
-	va_end(args);
-
 	_printk_buffer_write(&g_lb);
-	port_set_ints(oldstate);
+
+	spinlock_release_intr(&print_lock, oldstate);
+
+	va_end(args);
 }
 
 void console_add(console_t *console)
