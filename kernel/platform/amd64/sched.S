@@ -10,9 +10,9 @@ trampoline_exit:
 # rdi new thread 
 # rsi old thread 
 # only save rbx, rsp, rbp, r12-15
-.global asm_switch_context
-.global asm_jumpstart
-asm_switch_context:
+.global switch_context
+.global jumpstart
+switch_context:
   mov %rbx, 8(%rsi)
   mov %r12, 80(%rsi)
   mov %r13, 88(%rsi)
@@ -23,7 +23,7 @@ asm_switch_context:
   # release lock
   movb $0, 160(%rsi)
 
-asm_jumpstart:
+jumpstart:
   mov 8(%rdi), %rbx
   mov 80(%rdi), %r12
   mov 88(%rdi), %r13

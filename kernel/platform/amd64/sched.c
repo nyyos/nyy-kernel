@@ -1,6 +1,7 @@
 #include <ndk/sched.h>
 
 extern void thread_trampoline();
+extern void switch_context(thread_t *new, thread_t *old);
 
 void port_initialize_context(context_t *context, int user, void *kstack,
 			     thread_start_fn startfn, void *context1,
@@ -22,4 +23,9 @@ void port_initialize_context(context_t *context, int user, void *kstack,
 	context->r12 = (uint64_t)startfn;
 	context->r13 = (uint64_t)context1;
 	context->r14 = (uint64_t)context2;
+}
+
+void sched_port_switch(thread_t *old, thread_t *new)
+{
+	switch_context(new, old);
 }

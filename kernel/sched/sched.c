@@ -16,8 +16,8 @@ static kmem_cache_t *thread_cache = nullptr;
 static spinlock_t done_lock;
 static thread_queue_t done_queue;
 
-extern void asm_switch_context(thread_t *new, thread_t *old);
-extern void asm_jumpstart(thread_t *new);
+extern void sched_port_switch(thread_t *old, thread_t *new);
+extern void jumpstart(thread_t *new);
 extern void port_initialize_context(context_t *context, int user, void *kstack,
 				    thread_start_fn startfn, void *context1,
 				    void *context2);
@@ -168,11 +168,6 @@ static thread_t *sched_next(int priority)
 	return nullptr;
 }
 
-void sched_port_switch(thread_t *old, thread_t *new)
-{
-	asm_switch_context(new, old);
-}
-
 void sched_reschedule()
 {
 	thread_t *current = cpudata()->thread_current;
@@ -258,7 +253,7 @@ void sched_yield()
 {
 	thread_t *idlethread = &cpudata()->idle_thread;
 	cpudata()->thread_current = idlethread;
-	asm_jumpstart(idlethread);
+	jumpstart(idlethread);
 	__builtin_unreachable();
 }
 
