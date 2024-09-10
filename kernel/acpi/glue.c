@@ -193,27 +193,25 @@ void uacpi_kernel_free(void *mem, uacpi_size size_hint)
 
 void uacpi_kernel_log(uacpi_log_level lvl, const uacpi_char *str)
 {
-	const char *lvlstr;
 	switch (lvl) {
 	case UACPI_LOG_DEBUG:
-		lvlstr = "debug";
+		printk(DEBUG "acpi: %s", str);
 		break;
 	case UACPI_LOG_TRACE:
-		lvlstr = "trace";
+		printk(TRACE "acpi: %s", str);
 		break;
 	case UACPI_LOG_INFO:
-		lvlstr = "info";
+		printk(INFO "acpi: %s", str);
 		break;
 	case UACPI_LOG_WARN:
-		lvlstr = "warn";
+		printk(WARN "acpi: %s", str);
 		break;
 	case UACPI_LOG_ERROR:
-		lvlstr = "error";
+		printk(ERR "acpi: %s", str);
 		break;
 	default:
-		lvlstr = "<invalid>";
+		printk("[<invalid>] acpi: %s", str);
 	}
-	printk("acpi: [%s] %s", lvlstr, str);
 }
 
 uacpi_u64 uacpi_kernel_get_ticks(void)

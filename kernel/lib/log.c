@@ -24,6 +24,7 @@ static spinlock_t console_list_lock = SPINLOCK_INITIALIZER();
 #define LOG_WARN "[ \x1b[33mWARN  \x1b[0m] "
 #define LOG_ERR "[ \x1b[31mERROR \x1b[0m] "
 #define LOG_PANIC "[ \x1b[31mPANIC \x1b[0m] "
+#define LOG_TRACE "[ \x1b[36mTRACE \x1b[0m] "
 
 #define MSG_BUF_SIZE 512
 // has to align to ^2!
@@ -151,6 +152,10 @@ static spinlock_t print_lock = SPINLOCK_INITIALIZER();
 	case 5:
 		fmt++;
 		size = npf_snprintf(buf, MSG_BUF_SIZE, LOG_PANIC);
+		break;
+	case 6:
+		fmt++;
+		size = npf_snprintf(buf, MSG_BUF_SIZE, LOG_TRACE);
 		break;
 	default:
 		size = 0;

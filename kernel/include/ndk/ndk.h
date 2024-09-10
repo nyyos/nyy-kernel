@@ -76,6 +76,7 @@ static inline void spinlock_release_intr(spinlock_t *spinlock, int old)
 #define ERR "\3"
 #define DEBUG "\4"
 #define PANIC "\5"
+#define TRACE "\6"
 
 __attribute__((format(printf, 1, 2))) void printk(const char *fmt, ...);
 __attribute__((format(printf, 1, 2))) void printk_locked(const char *fmt, ...);
