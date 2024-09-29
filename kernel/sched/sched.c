@@ -155,7 +155,7 @@ static void sched_insert(scheduler_t *sched, thread_t *thread)
 static thread_t *sched_next(int priority)
 {
 	scheduler_t *sched = lsched();
-	for (int i = PRIORITY_COUNT; i >= priority; i--) {
+	for (int i = PRIORITY_COUNT; i > priority; i--) {
 		thread_queue_t *qp = &sched->run_queues[i - 1];
 		if (TAILQ_EMPTY(qp))
 			continue;
