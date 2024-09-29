@@ -83,6 +83,8 @@ void kickstart_kmain(void *, void *)
 	}
 }
 
+extern void port_pci_init();
+
 static void kmain_threaded(void *, void *)
 {
 	printk(INFO "entered threaded kmain\n");
@@ -100,6 +102,8 @@ static void kmain_threaded(void *, void *)
 #ifdef CONFIG_SMP
 	port_start_cores();
 #endif
+
+	port_pci_init();
 
 	// XXX: maybe reuse?
 	sched_exit_destroy();

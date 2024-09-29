@@ -1,22 +1,29 @@
-#include "ndk/kmem.h"
-#include "ndk/vm.h"
 #include <stdint.h>
 #include <string.h>
+#include <assert.h>
 #include <uacpi/acpi.h>
 #include <uacpi/tables.h>
-#include <assert.h>
 #include <ndk/addr.h>
+#include <ndk/kmem.h>
+#include <ndk/vm.h>
 #include <ndk/ndk.h>
+#include <dkit/pci.h>
 #include "asm.h"
+
+#define MCFG_MAPPING_SIZE(buscount) (4096l * 8l * 32l * (buscount))
 
 enum {
 	PCI_IO_CONFIG_ADDRESS = 0xCF8,
 	PCI_IO_CONFIG_DATA = 0xCFC,
 };
 
-uint32_t pci_legacy_read_32(uint32_t bus, uint32_t slot, uint32_t function,
-			    uint32_t offset)
+static struct acpi_mcfg_allocation *mcfg_entries;
+static size_t mcfg_entrycount;
+
+static uint32_t pci_legacy_read(uint32_t segment, uint32_t bus, uint32_t slot,
+				uint32_t function, uint32_t offset)
 {
+	assert(segment == 0);
 	assert(bus < 256 && slot < 32 && function < 8 && offset < 256);
 	assert(!(offset & 0b11));
 	uint32_t address = 0x80000000 | (bus << 16) | (slot << 11) |
@@ -25,9 +32,10 @@ uint32_t pci_legacy_read_32(uint32_t bus, uint32_t slot, uint32_t function,
 	return inl(PCI_IO_CONFIG_ADDRESS);
 }
 
-void pci_legacy_write_32(uint32_t bus, uint32_t slot, uint32_t function,
-			 uint32_t offset, uint32_t value)
+static void pci_legacy_write(uint32_t segment, uint32_t bus, uint32_t slot,
+			     uint32_t function, uint32_t offset, uint32_t value)
 {
+	assert(segment == 0);
 	assert(bus < 256 && slot < 32 && function < 8 && offset < 256);
 	assert(!(offset & 0b11));
 	uint32_t address = 0x80000000 | (bus << 16) | (slot << 11) |
@@ -36,10 +44,46 @@ void pci_legacy_write_32(uint32_t bus, uint32_t slot, uint32_t function,
 	outl(PCI_IO_CONFIG_DATA, value);
 }
 
-static struct acpi_mcfg_allocation *mcfg_entries;
-static size_t mcfg_entrycount;
+static struct acpi_mcfg_allocation *mcfg_bus(uint32_t segment, uint32_t bus)
+{
+	for (size_t i = 0; i < mcfg_entrycount; i++) {
+		if (mcfg_entries[i].segment != segment &&
+		    mcfg_entries[i].start_bus >= bus &&
+		    bus <= mcfg_entries[i].end_bus) {
+			return &mcfg_entries[i];
+		}
+	}
+	return nullptr;
+}
 
-#define MCFG_MAPPING_SIZE(buscount) (4096l * 8l * 32l * (buscount))
+static uint32_t pci_mcfg_read(uint32_t segment, uint32_t bus, uint32_t slot,
+			      uint32_t function, uint32_t offset)
+{
+	struct acpi_mcfg_allocation *entry = mcfg_bus(segment, bus);
+	if (entry == nullptr)
+		return 0xFFFFFFFF;
+
+	volatile uint32_t *addr =
+		(volatile uint32_t *)(entry->address +
+					      ((bus - entry->start_bus) << 20 |
+					       slot << 15 | function << 12) |
+				      (offset & ~0x3));
+	return *addr;
+}
+
+static void pci_mcfg_write(uint32_t segment, uint32_t bus, uint32_t slot,
+			   uint32_t function, uint32_t offset, uint32_t value)
+{
+	struct acpi_mcfg_allocation *entry = mcfg_bus(segment, bus);
+
+	volatile uint32_t *addr =
+		(volatile uint32_t *)(entry->address +
+					      ((bus - entry->start_bus) << 20 |
+					       slot << 15 | function << 12) |
+				      (offset & ~0x3));
+
+	*addr = value;
+}
 
 void port_pci_init()
 {
@@ -84,7 +128,12 @@ void port_pci_init()
 			       i, entry->address, entry->segment,
 			       entry->start_bus, entry->end_bus);
 		}
+
+		pci_read32 = pci_mcfg_read;
+		pci_write32 = pci_mcfg_write;
 	} else {
 		// fallback to legacy access
+		pci_read32 = pci_legacy_read;
+		pci_write32 = pci_legacy_write;
 	}
 }

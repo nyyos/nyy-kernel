@@ -144,6 +144,7 @@ void early_port_cpu_common_init(cpudata_t *data)
 
 extern void idle_thread_fn(void *, void *);
 
+#ifdef CONFIG_SMP
 void port_smp_entry(struct limine_smp_info *info)
 {
 	struct smp_info *nyy_info = (struct smp_info *)info->extra_argument;
@@ -166,6 +167,7 @@ void port_smp_entry(struct limine_smp_info *info)
 
 	sched_jump_into_idle_thread();
 }
+#endif
 
 void early_port_post_acpi()
 {

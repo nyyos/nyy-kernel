@@ -77,7 +77,7 @@ uacpi_status uacpi_kernel_raw_io_read(uacpi_io_addr addr, uacpi_u8 width,
 		*out = inw(addr);
 		break;
 	case 4:
-		*out = ind(addr);
+		*out = inl(addr);
 		break;
 	default:
 		return UACPI_STATUS_INVALID_ARGUMENT;
@@ -97,7 +97,7 @@ uacpi_status uacpi_kernel_raw_io_write(uacpi_io_addr addr, uacpi_u8 width,
 		outw(addr, value);
 		break;
 	case 4:
-		outd(addr, value);
+		outl(addr, value);
 		break;
 	default:
 		return UACPI_STATUS_INVALID_ARGUMENT;

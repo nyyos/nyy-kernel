@@ -5,6 +5,7 @@ subdir('vm')
 subdir('irq')
 subdir('boot')
 subdir('sched')
+subdir('dkit')
 
 # XXX: make this depend on config
 subdir('acpi')
