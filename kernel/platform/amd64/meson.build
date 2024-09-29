@@ -1,11 +1,14 @@
 ultra_protocol = dependency('ultra_protocol')
 
-nyy = executable('nyy', 
+kernel_sources += files(
   'entry.c', 'gdt.c', 'int.c',
   'gdt.S', 'stubs.S', 'vm.c',
   'string.S', 'start.S', 'ultra.c', 
-  'pic.c', 'hpet.c',
-  'apic.c', 'sched.S', 'sched.c',
+  'pic.c', 'hpet.c', 'pci.c',
+  'apic.c', 'sched.S', 'sched.c'
+)
+
+nyy = executable('nyy', 
   kernel_sources,
   c_args: [ freestanding_c_args, '-std=gnu2x'],
   include_directories: [freestanding_include_dirs],
