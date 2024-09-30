@@ -1,1 +1,1 @@
-kernel_sources += files('pci.c')
+subdir('pci')
