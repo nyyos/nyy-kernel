@@ -5,6 +5,7 @@
 #include <ndk/vm.h>
 #include <ndk/time.h>
 #include <dkit/acpi.h>
+#include <dkit/dkit.h>
 
 static cpudata_t bsp_data;
 
@@ -83,8 +84,6 @@ void kickstart_kmain(void *, void *)
 	}
 }
 
-extern void port_pci_init();
-
 static void kmain_threaded(void *, void *)
 {
 	printk(INFO "entered threaded kmain\n");
@@ -103,7 +102,7 @@ static void kmain_threaded(void *, void *)
 	port_start_cores();
 #endif
 
-	port_pci_init();
+	dkit_init();
 
 	// XXX: maybe reuse?
 	sched_exit_destroy();

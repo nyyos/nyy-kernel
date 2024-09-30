@@ -7,9 +7,6 @@ subdir('boot')
 subdir('sched')
 subdir('dkit')
 
-# XXX: make this depend on config
-subdir('acpi')
-
 if (use_limine)
   subdir('platform/limine-generic')
 endif
