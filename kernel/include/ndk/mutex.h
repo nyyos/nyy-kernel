@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <ndk/sched.h>
 
@@ -14,3 +18,7 @@ typedef struct mutex {
 void mutex_init(mutex_t *mutex);
 void mutex_acquire(mutex_t *mutex);
 void mutex_release(mutex_t *mutex);
+
+#ifdef __cplusplus
+}
+#endif
