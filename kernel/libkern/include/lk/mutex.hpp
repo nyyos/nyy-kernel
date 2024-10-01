@@ -7,7 +7,7 @@
 namespace lk
 {
 struct adopt_lock_t {};
-struct dont_lock_t {};
+struct defer_lock_t {};
 
 class Mutex {
     public:
@@ -113,7 +113,7 @@ template <BasicLockable Mutex> class unique_lock {
 	{
 	}
 
-	[[nodiscard]] unique_lock(mutex_type &mutex, dont_lock_t t)
+	[[nodiscard]] unique_lock(mutex_type &mutex, defer_lock_t t)
 		: mutex_{ &mutex }
 		, is_locked_{ false }
 	{
