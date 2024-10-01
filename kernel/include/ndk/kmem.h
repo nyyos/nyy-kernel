@@ -1,6 +1,11 @@
 #pragma once
 
 #include <stddef.h>
+#include <ndk/util.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct kmem_cache kmem_cache_t;
 
@@ -23,3 +28,7 @@ void kmem_cache_free(kmem_cache_t *cp, void *obj);
 void *kmalloc(size_t size);
 void kfree(void *ptr, size_t size);
 void *kcalloc(size_t count, size_t size);
+
+#ifdef __cplusplus
+}
+#endif

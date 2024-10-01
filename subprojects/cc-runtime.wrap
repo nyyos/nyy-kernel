@@ -1,0 +1,8 @@
+[wrap-git]
+url = https://github.com/osdev0/cc-runtime
+revision = packed
+depth = 1
+patch_directory = cc-runtime
+
+[provide]
+cc_runtime = cc_runtime_dep

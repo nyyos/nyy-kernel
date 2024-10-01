@@ -1,2 +1,0 @@
-subdir('ccrt')
-subdir('headers')

@@ -84,6 +84,8 @@ void kickstart_kmain(void *, void *)
 	}
 }
 
+extern void test_fn();
+
 static void kmain_threaded(void *, void *)
 {
 	printk(INFO "entered threaded kmain\n");
@@ -103,6 +105,13 @@ static void kmain_threaded(void *, void *)
 #endif
 
 	dkit_init();
+
+	test_fn();
+
+#if 0 
+	extern uintptr_t __stack_chk_guard;
+	printk(WARN "stack chk guard: %ld\n", __stack_chk_guard);
+#endif
 
 	// XXX: maybe reuse?
 	sched_exit_destroy();

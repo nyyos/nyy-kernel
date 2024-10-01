@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
 
 #include <nyyconf.h>
@@ -85,3 +89,7 @@ void printk_init();
 
 [[gnu::noreturn]] void panic(const char *msg);
 [[gnu::noreturn]] void panic_withstack(const char *msg, uintptr_t stack);
+
+#ifdef __cplusplus
+}
+#endif

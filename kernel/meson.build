@@ -5,6 +5,8 @@ subdir('vm')
 subdir('irq')
 subdir('boot')
 subdir('sched')
+
+subdir('libkern')
 subdir('dkit')
 
 if (use_limine)

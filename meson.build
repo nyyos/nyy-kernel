@@ -20,6 +20,9 @@ kernel_deps = [
   autoconf_dep, 
   dependency('flanterm'), 
   dependency('pairing_heap'),
+  dependency('freestnd_cxx_hdrs'),
+  dependency('freestnd_c_hdrs'),
+  dependency('cc_runtime'),
 ]
 
 config_h = configure_file(
@@ -29,13 +32,11 @@ config_h = configure_file(
 
 arch = get_option('arch')
 
-add_languages('c')
+add_languages('c', 'cpp')
 
 warnings = [
   '-Wno-comment', # added because of warning in nanoprintf ??
 ]
-
-target_is_freestanding = true
 
 freestanding_c_args = [
   '-fno-strict-aliasing',
@@ -48,6 +49,7 @@ freestanding_c_args = [
   '-fno-lto',
   '-ffunction-sections',
   '-fdata-sections',
+  '-fvisibility=hidden',
   '-D__KERNEL__',
   warnings,
 ]
@@ -105,27 +107,32 @@ elif (arch == 'riscv64')
     '-mno-relax',
     '-mcmodel=medany'
   ]
-elif (arch == 'linux')
-  target_is_freestanding = false
-  freestanding_c_args = [
-    warnings,
-    '-DNYYLINUX'
-  ]
 else
   message('\n\t' + arch + ' not supported by Nyy')
   error('\n\tbad arch')
 endif
 
+freestanding_cpp_args = [
+  freestanding_c_args,
+  '-fno-rtti',
+  '-fno-exceptions',
+  '-fsized-deallocation',
+  '-fno-unwind-tables',
+  '-fno-asynchronous-unwind-tables'
+]
+
 freestanding_c_args += ['-DARCHNAME="' + arch +'"']
 
 kernel_sources = []
-freestanding_include_dirs = [ include_directories(
+freestanding_include_dirs = []
+
+freestanding_include_dirs += include_directories(
   'kernel/include',
   'kernel'
-)]
+)
 
 if(use_limine)
-  freestanding_include_dirs += [include_directories('vendor/limine')]
+  freestanding_include_dirs += include_directories('vendor/limine')
 endif
 
 if(use_limine)
@@ -136,7 +143,4 @@ if(use_limine)
   )
 endif
 
-if (target_is_freestanding)
-  subdir('freestanding')
-endif
 subdir('kernel')
