@@ -124,15 +124,15 @@ freestanding_cpp_args = [
 freestanding_c_args += ['-DARCHNAME="' + arch +'"']
 
 kernel_sources = []
-freestanding_include_dirs = []
+kernel_include_dirs = []
 
-freestanding_include_dirs += include_directories(
+kernel_include_dirs += include_directories(
   'kernel/include',
   'kernel'
 )
 
 if(use_limine)
-  freestanding_include_dirs += include_directories('vendor/limine')
+  kernel_include_dirs += include_directories('vendor/limine')
 endif
 
 if(use_limine)

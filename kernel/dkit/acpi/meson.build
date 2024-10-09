@@ -1,5 +1,5 @@
 kernel_sources += uacpi_sources
-freestanding_include_dirs += uacpi_includes
+kernel_include_dirs += uacpi_includes
 
 freestanding_c_args += ['-DUACPI_SIZED_FREES=1']
 
