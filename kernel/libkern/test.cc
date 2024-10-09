@@ -1,13 +1,13 @@
-#include <memory>
 #include <ndk/ndk.h>
 #include <lk/mutex.hpp>
+#include <lk/base.hpp>
 
-struct Foo {};
+struct Foo : Object {};
 
 void test_fn_cpp()
 {
-	auto allocator = std::allocator<Foo>();
-	(void)allocator.allocate(32);
+	auto foo = new Foo();
+	foo->release();
 
 	auto mut = lk::Mutex();
 	lk::unique_lock<lk::Mutex> uniq;
