@@ -157,7 +157,7 @@
 #define _NOSTD_STRING_DIAG_POP() \
 	_NOSTD_STRING_PRAGMA(_NOSTD_STRING_PRAGMA_DIAG_PREFIX diagnostic pop)
 
-namespace lk
+namespace std
 {
 namespace detail
 {
@@ -624,7 +624,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			count <= this->max_size(),
-			"lk::basic_string::basic_string(): constructed string size would exceed max_size()",
+			"std::basic_string::basic_string(): constructed string size would exceed max_size()",
 			std::length_error);
 		this->internal_assign(ch, count);
 	}
@@ -636,7 +636,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			pos <= str.get_size(),
-			"lk::basic_string::basic_string(): pos out of range",
+			"std::basic_string::basic_string(): pos out of range",
 			std::out_of_range);
 		auto len = std::min(count, str.get_size() - pos);
 		this->internal_assign(str.data(), len);
@@ -653,7 +653,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			count <= this->max_size(),
-			"lk::basic_string::basic_string(): constructed string size would exceed max_size()",
+			"std::basic_string::basic_string(): constructed string size would exceed max_size()",
 			std::length_error);
 		this->internal_assign(str, count);
 	}
@@ -672,7 +672,7 @@ class basic_string {
 		auto len = std::distance(first, last);
 		_NOSTD_STRING_ASSERT(
 			len <= this->max_size(),
-			"lk::basic_string::basic_string(): constructed string size would exceed max_size()",
+			"std::basic_string::basic_string(): constructed string size would exceed max_size()",
 			std::length_error);
 		this->internal_assign(const_pointer(first), len);
 	}
@@ -712,7 +712,7 @@ class basic_string {
 		auto len = ilist.size();
 		_NOSTD_STRING_ASSERT(
 			len <= this->max_size(),
-			"lk::basic_string::basic_string(): constructed string size would exceed max_size()",
+			"std::basic_string::basic_string(): constructed string size would exceed max_size()",
 			std::length_error);
 		this->internal_assign(const_pointer(ilist.begin()), len);
 	}
@@ -726,14 +726,14 @@ class basic_string {
 		auto sv = sview_type(t);
 		_NOSTD_STRING_ASSERT(
 			pos <= sv.length(),
-			"lk::basic_string::basic_string(): pos out of range",
+			"std::basic_string::basic_string(): pos out of range",
 			std::out_of_range);
 
 		auto ssv = sv.substr(pos, count);
 		auto len = ssv.length();
 		_NOSTD_STRING_ASSERT(
 			len <= this->max_size(),
-			"lk::basic_string::basic_string(): constructed string size would exceed max_size()",
+			"std::basic_string::basic_string(): constructed string size would exceed max_size()",
 			std::length_error);
 		this->internal_assign(ssv.data(), len);
 	}
@@ -750,7 +750,7 @@ class basic_string {
 		auto len = sv.length();
 		_NOSTD_STRING_ASSERT(
 			len <= this->max_size(),
-			"lk::basic_string::basic_string(): constructed string size would exceed max_size()",
+			"std::basic_string::basic_string(): constructed string size would exceed max_size()",
 			std::length_error);
 		this->internal_assign(sv.data(), len);
 	}
@@ -827,7 +827,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			count <= this->max_size(),
-			"lk::basic_string::basic_string(): resulted string size would exceed max_size()",
+			"std::basic_string::basic_string(): resulted string size would exceed max_size()",
 			std::length_error);
 		this->internal_assign(ch, count);
 		return *this;
@@ -844,7 +844,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			pos <= str.get_size(),
-			"lk::basic_string::assign(): pos out of range",
+			"std::basic_string::assign(): pos out of range",
 			std::out_of_range);
 		this->internal_assign(str.data(),
 				      std::min(count, str.size() - pos));
@@ -867,7 +867,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			count <= this->max_size(),
-			"lk::basic_string::assign(): resulted string size would exceed max_size()",
+			"std::basic_string::assign(): resulted string size would exceed max_size()",
 			std::length_error);
 		this->internal_assign(str, count);
 		return *this;
@@ -884,7 +884,7 @@ class basic_string {
 		auto len = std::distance(first, last);
 		_NOSTD_STRING_ASSERT(
 			len <= this->max_size(),
-			"lk::basic_string::assign(): resulted string size would exceed max_size()",
+			"std::basic_string::assign(): resulted string size would exceed max_size()",
 			std::length_error);
 		this->internal_assign(const_pointer(first), len);
 		return *this;
@@ -895,7 +895,7 @@ class basic_string {
 		auto len = ilist.size();
 		_NOSTD_STRING_ASSERT(
 			len <= this->max_size(),
-			"lk::basic_string::assign(): resulted string size would exceed max_size()",
+			"std::basic_string::assign(): resulted string size would exceed max_size()",
 			std::length_error);
 		this->internal_assign(const_pointer(ilist.begin()), len);
 		return *this;
@@ -920,7 +920,7 @@ class basic_string {
 		auto len = sv.length();
 		_NOSTD_STRING_ASSERT(
 			len <= this->max_size(),
-			"lk::basic_string::assign(): resulted string size would exceed max_size()",
+			"std::basic_string::assign(): resulted string size would exceed max_size()",
 			std::length_error);
 		return this->assign(sv.data(), len);
 	}
@@ -934,7 +934,7 @@ class basic_string {
 					this->_allocator);
 		_NOSTD_STRING_ASSERT(
 			str.get_size() <= this->max_size(),
-			"lk::basic_string::assign_range(): resulted string size would exceed max_size()",
+			"std::basic_string::assign_range(): resulted string size would exceed max_size()",
 			std::length_error);
 		return this->assign();
 	}
@@ -959,7 +959,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			pos < this->get_size(),
-			"lk::basic_string::at(): pos out of range",
+			"std::basic_string::at(): pos out of range",
 			std::out_of_range);
 		return this->get_data()[pos];
 	}
@@ -968,7 +968,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			pos < this->get_size(),
-			"lk::basic_string::at(): pos out of range",
+			"std::basic_string::at(): pos out of range",
 			std::out_of_range);
 		return this->get_data()[pos];
 	}
@@ -1103,7 +1103,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			cap <= this->max_size(),
-			"lk::basic_string::reserve(): allocated memory size would exceed max_size()",
+			"std::basic_string::reserve(): allocated memory size would exceed max_size()",
 			std::length_error);
 		if (cap <= this->get_cap())
 			return;
@@ -1143,11 +1143,11 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + count <= this->max_size(),
-			"lk::basic_string::insert(): resulted string size would exceed max_size()",
+			"std::basic_string::insert(): resulted string size would exceed max_size()",
 			std::length_error);
 		_NOSTD_STRING_ASSERT(
 			pos <= this->get_size(),
-			"lk::basic_string::insert(): pos out of range",
+			"std::basic_string::insert(): pos out of range",
 			std::out_of_range);
 		this->insert(std::next(this->cbegin(), pos), count, ch);
 		return *this;
@@ -1157,12 +1157,12 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			pos <= this->get_size(),
-			"lk::basic_string::insert(): pos out of range",
+			"std::basic_string::insert(): pos out of range",
 			std::out_of_range);
 		auto len = Traits::length(str);
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + len <= this->max_size(),
-			"lk::basic_string::insert(): resulted string size would exceed max_size()",
+			"std::basic_string::insert(): resulted string size would exceed max_size()",
 			std::length_error);
 		this->internal_insert(pos, str, len);
 		return *this;
@@ -1173,11 +1173,11 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + count <= this->max_size(),
-			"lk::basic_string::insert(): resulted string size would exceed max_size()",
+			"std::basic_string::insert(): resulted string size would exceed max_size()",
 			std::length_error);
 		_NOSTD_STRING_ASSERT(
 			pos <= this->get_size(),
-			"lk::basic_string::insert(): pos out of range",
+			"std::basic_string::insert(): pos out of range",
 			std::out_of_range);
 		this->internal_insert(pos, str, count);
 		return *this;
@@ -1187,11 +1187,11 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + str.get_size() <= this->max_size(),
-			"lk::basic_string::insert(): resulted string size would exceed max_size()",
+			"std::basic_string::insert(): resulted string size would exceed max_size()",
 			std::length_error);
 		_NOSTD_STRING_ASSERT(
 			pos <= this->get_size(),
-			"lk::basic_string::insert(): pos out of range",
+			"std::basic_string::insert(): pos out of range",
 			std::out_of_range);
 		this->internal_insert(pos, const_pointer(str.get_data()),
 				      str.get_size());
@@ -1204,12 +1204,12 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			pos <= this->get_size() && pos_str <= str.get_size(),
-			"lk::basic_string::insert(): pos or pos_str out of range",
+			"std::basic_string::insert(): pos or pos_str out of range",
 			std::out_of_range);
 		count = std::min(count, str.length() - pos_str);
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + count <= this->max_size(),
-			"lk::basic_string::insert(): resulted string size would exceed max_size()",
+			"std::basic_string::insert(): resulted string size would exceed max_size()",
 			std::length_error);
 		return this->insert(pos, str.data() + pos_str, count);
 	}
@@ -1224,7 +1224,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + count <= this->max_size(),
-			"lk::basic_string::insert(): resulted string size would exceed max_size()",
+			"std::basic_string::insert(): resulted string size would exceed max_size()",
 			std::length_error);
 		auto spos = std::distance(this->cbegin(), pos);
 		this->internal_insert(spos, ch, count);
@@ -1239,7 +1239,7 @@ class basic_string {
 		auto len = std::distance(first, last);
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + len <= this->max_size(),
-			"lk::basic_string::insert(): resulted string size would exceed max_size()",
+			"std::basic_string::insert(): resulted string size would exceed max_size()",
 			std::length_error);
 		this->internal_insert(spos, const_pointer(first), len);
 		return std::next(this->begin(), spos);
@@ -1250,7 +1250,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + ilist.size() <= this->max_size(),
-			"lk::basic_string::insert(): resulted string size would exceed max_size()",
+			"std::basic_string::insert(): resulted string size would exceed max_size()",
 			std::length_error);
 		auto spos = std::distance(this->cbegin(), pos);
 		this->internal_insert(spos, const_pointer(ilist.begin()),
@@ -1265,12 +1265,12 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			pos <= this->get_size(),
-			"lk::basic_string::insert(): pos out of range",
+			"std::basic_string::insert(): pos out of range",
 			std::out_of_range);
 		sview_type sv(t);
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + sv.length() <= this->max_size(),
-			"lk::basic_string::insert(): resulted string size would exceed max_size()",
+			"std::basic_string::insert(): resulted string size would exceed max_size()",
 			std::length_error);
 		this->internal_insert(pos, const_pointer(sv.data()),
 				      sv.length());
@@ -1286,12 +1286,12 @@ class basic_string {
 		auto sv = sview_type(t);
 		_NOSTD_STRING_ASSERT(
 			pos <= this->get_size() && pos_str <= sv.length(),
-			"lk::basic_string::insert(): pos or pos_str out of range",
+			"std::basic_string::insert(): pos or pos_str out of range",
 			std::out_of_range);
 		auto ssv = sv.substr(pos_str, count);
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + ssv.length() <= this->max_size(),
-			"lk::basic_string::insert(): resulted string size would exceed max_size()",
+			"std::basic_string::insert(): resulted string size would exceed max_size()",
 			std::length_error);
 		this->internal_insert(pos, const_pointer(ssv.data()),
 				      ssv.length());
@@ -1307,7 +1307,7 @@ class basic_string {
 					this->_allocator);
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + str.get_size() <= this->max_size(),
-			"lk::basic_string::insert_range(): resulted string size would exceed max_size()",
+			"std::basic_string::insert_range(): resulted string size would exceed max_size()",
 			std::length_error);
 		return this->insert(pos - this->begin(), str);
 	}
@@ -1320,7 +1320,7 @@ class basic_string {
 
 		_NOSTD_STRING_ASSERT(
 			pos <= sz,
-			"lk::basic_string::erase(): pos out of range",
+			"std::basic_string::erase(): pos out of range",
 			std::out_of_range);
 
 		count = std::min(count, sz - pos);
@@ -1355,7 +1355,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + 1 <= this->max_size(),
-			"lk::basic_string::push_back(): resulted string size would exceed max_size()",
+			"std::basic_string::push_back(): resulted string size would exceed max_size()",
 			std::length_error);
 		this->append(1, ch);
 	}
@@ -1369,7 +1369,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + count <= this->max_size(),
-			"lk::basic_string::append(): resulted string size would exceed max_size()",
+			"std::basic_string::append(): resulted string size would exceed max_size()",
 			std::length_error);
 		this->internal_append(ch, count);
 		return *this;
@@ -1379,7 +1379,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + str.get_size() <= this->max_size(),
-			"lk::basic_string::append(): resulted string size would exceed max_size()",
+			"std::basic_string::append(): resulted string size would exceed max_size()",
 			std::length_error);
 		this->internal_append(str.get_data(), str.get_size());
 		return *this;
@@ -1390,12 +1390,12 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			pos <= str.get_size(),
-			"lk::basic_string::append(): pos out of range",
+			"std::basic_string::append(): pos out of range",
 			std::out_of_range);
 		auto ssv = sview_type(str).substr(pos, count);
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + ssv.length() <= this->max_size(),
-			"lk::basic_string::append(): resulted string size would exceed max_size()",
+			"std::basic_string::append(): resulted string size would exceed max_size()",
 			std::length_error);
 		this->internal_append(ssv.data(), ssv.length());
 		return *this;
@@ -1405,7 +1405,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + count <= this->max_size(),
-			"lk::basic_string::append(): resulted string size would exceed max_size()",
+			"std::basic_string::append(): resulted string size would exceed max_size()",
 			std::length_error);
 		this->internal_append(str, count);
 		return *this;
@@ -1416,7 +1416,7 @@ class basic_string {
 		auto len = Traits::length(str);
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + len <= this->max_size(),
-			"lk::basic_string::append(): resulted string size would exceed max_size()",
+			"std::basic_string::append(): resulted string size would exceed max_size()",
 			std::length_error);
 		return this->append(str, len);
 	}
@@ -1427,7 +1427,7 @@ class basic_string {
 		auto len = std::distance(first, last);
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + len <= this->max_size(),
-			"lk::basic_string::append(): resulted string size would exceed max_size()",
+			"std::basic_string::append(): resulted string size would exceed max_size()",
 			std::length_error);
 		this->internal_append(const_pointer(first), len);
 		return *this;
@@ -1437,7 +1437,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + ilist.size() <= this->max_size(),
-			"lk::basic_string::append(): resulted string size would exceed max_size()",
+			"std::basic_string::append(): resulted string size would exceed max_size()",
 			std::length_error);
 		this->internal_append(const_pointer(ilist.begin()),
 				      ilist.size());
@@ -1452,7 +1452,7 @@ class basic_string {
 		sview_type sv(t);
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + sv.length() <= this->max_size(),
-			"lk::basic_string::append(): resulted string size would exceed max_size()",
+			"std::basic_string::append(): resulted string size would exceed max_size()",
 			std::length_error);
 		this->internal_append(sv.data(), sv.size());
 		return *this;
@@ -1467,12 +1467,12 @@ class basic_string {
 		sview_type sv(t);
 		_NOSTD_STRING_ASSERT(
 			pos < sv.length(),
-			"lk::basic_string::append(): pos out of range",
+			"std::basic_string::append(): pos out of range",
 			std::out_of_range);
 		auto ssv = sv.substr(pos, count);
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + ssv.length() <= this->max_size(),
-			"lk::basic_string::append(): resulted string size would exceed max_size()",
+			"std::basic_string::append(): resulted string size would exceed max_size()",
 			std::length_error);
 		this->internal_append(ssv.data(), ssv.length());
 		return *this;
@@ -1487,7 +1487,7 @@ class basic_string {
 					this->_allocator);
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + str.get_size() <= this->max_size(),
-			"lk::basic_string::insert_range(): resulted string size would exceed max_size()",
+			"std::basic_string::insert_range(): resulted string size would exceed max_size()",
 			std::length_error);
 		return this->append(str);
 	}
@@ -1638,7 +1638,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			pos <= this->get_size(),
-			"lk::basic_string::replace(): pos out of range",
+			"std::basic_string::replace(): pos out of range",
 			std::out_of_range);
 		return this->replace(pos, count, str, 0, str.length());
 	}
@@ -1658,7 +1658,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			pos <= this->get_size() && pos2 <= str.get_size(),
-			"lk::basic_string::replace(): pos or pos_str out of range",
+			"std::basic_string::replace(): pos or pos_str out of range",
 			std::out_of_range);
 		count2 = std::min(count2, str.length() - pos2);
 		auto ssv = sview_type(str).substr(pos2, count2);
@@ -1679,12 +1679,12 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			pos <= this->get_size(),
-			"lk::basic_string::replace(): pos out of range",
+			"std::basic_string::replace(): pos out of range",
 			std::out_of_range);
 		count = std::min(count, this->length() - pos);
 		_NOSTD_STRING_ASSERT(
 			this->get_size() - count + count2 <= this->max_size(),
-			"lk::basic_string::replace(): resulted string size would exceed max_size()",
+			"std::basic_string::replace(): resulted string size would exceed max_size()",
 			std::length_error);
 		this->internal_replace(pos, const_pointer(str), count, count2);
 		return *this;
@@ -1718,12 +1718,12 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			pos <= this->get_size(),
-			"lk::basic_string::replace(): pos out of range",
+			"std::basic_string::replace(): pos out of range",
 			std::out_of_range);
 		count = std::min(count, this->length() - pos);
 		_NOSTD_STRING_ASSERT(
 			this->get_size() - count + count2 <= this->max_size(),
-			"lk::basic_string::replace(): resulted string size would exceed max_size()",
+			"std::basic_string::replace(): resulted string size would exceed max_size()",
 			std::length_error);
 		this->internal_replace(pos, ch, count, count2);
 		return *this;
@@ -1738,11 +1738,11 @@ class basic_string {
 
 		_NOSTD_STRING_ASSERT(
 			this->get_size() - count + count2 <= this->max_size(),
-			"lk::basic_string::replace(): resulted string size would exceed max_size()",
+			"std::basic_string::replace(): resulted string size would exceed max_size()",
 			std::length_error);
 		_NOSTD_STRING_ASSERT(
 			pos <= this->get_size(),
-			"lk::basic_string::replace(): pos out of range",
+			"std::basic_string::replace(): pos out of range",
 			std::out_of_range);
 		this->internal_replace(pos, ch, count, count2);
 		return *this;
@@ -1764,7 +1764,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			pos <= this->get_size(),
-			"lk::basic_string::replace(): pos out of range",
+			"std::basic_string::replace(): pos out of range",
 			std::out_of_range);
 		sview_type sv(t);
 		return this->replace(pos, count, sv.data(), sv.length());
@@ -1789,7 +1789,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			pos <= this->get_size(),
-			"lk::basic_string::replace(): pos out of range",
+			"std::basic_string::replace(): pos out of range",
 			std::out_of_range);
 		auto sv = sview_type(t).substr(pos2, count2);
 		return this->replace(pos, count, sv.data(), sv.length());
@@ -1814,7 +1814,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			pos <= this->get_size(),
-			"lk::basic_string::substr(): pos out of range",
+			"std::basic_string::substr(): pos out of range",
 			std::out_of_range);
 		return basic_string(*this, pos, count);
 	}
@@ -1824,7 +1824,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			pos <= this->get_size(),
-			"lk::basic_string::copy(): pos out of range",
+			"std::basic_string::copy(): pos out of range",
 			std::out_of_range);
 		return this->get_view().copy(str, count, pos);
 	}
@@ -1833,7 +1833,7 @@ class basic_string {
 	{
 		_NOSTD_STRING_ASSERT(
 			this->get_size() + count <= this->max_size(),
-			"lk::basic_string::resize(): resulted string size would exceed max_size()",
+			"std::basic_string::resize(): resulted string size would exceed max_size()",
 			std::length_error);
 		auto cap = this->get_cap();
 		auto sz = this->get_size();
@@ -1858,7 +1858,7 @@ class basic_string {
 	{
 		static_assert(
 			detail::dependent_false<Char>,
-			"lk::basic_string::resize_and_overwrite(count, op) not implemented!");
+			"std::basic_string::resize_and_overwrite(count, op) not implemented!");
 	}
 
 	constexpr void swap(basic_string &str)
@@ -2643,23 +2643,23 @@ _NOSTD_STRING_DIAG_POP()
 namespace std
 {
 template <typename Allocator>
-struct hash<lk::basic_string<char, std::char_traits<char>, Allocator> >
-	: lk::detail::string_hash_base<char, Allocator> {};
+struct hash<std::basic_string<char, std::char_traits<char>, Allocator> >
+	: std::detail::string_hash_base<char, Allocator> {};
 
 template <typename Allocator>
-struct hash<lk::basic_string<char8_t, std::char_traits<char8_t>, Allocator> >
-	: lk::detail::string_hash_base<char8_t, Allocator> {};
+struct hash<std::basic_string<char8_t, std::char_traits<char8_t>, Allocator> >
+	: std::detail::string_hash_base<char8_t, Allocator> {};
 
 template <typename Allocator>
-struct hash<lk::basic_string<char16_t, std::char_traits<char16_t>, Allocator> >
-	: lk::detail::string_hash_base<char16_t, Allocator> {};
+struct hash<std::basic_string<char16_t, std::char_traits<char16_t>, Allocator> >
+	: std::detail::string_hash_base<char16_t, Allocator> {};
 
 template <typename Allocator>
-struct hash<lk::basic_string<char32_t, std::char_traits<char32_t>, Allocator> >
-	: lk::detail::string_hash_base<char32_t, Allocator> {};
+struct hash<std::basic_string<char32_t, std::char_traits<char32_t>, Allocator> >
+	: std::detail::string_hash_base<char32_t, Allocator> {};
 
 template <typename Allocator>
-struct hash<lk::basic_string<wchar_t, std::char_traits<wchar_t>, Allocator> >
-	: lk::detail::string_hash_base<wchar_t, Allocator> {};
+struct hash<std::basic_string<wchar_t, std::char_traits<wchar_t>, Allocator> >
+	: std::detail::string_hash_base<wchar_t, Allocator> {};
 } // namespace std
 #endif

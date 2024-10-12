@@ -1,11 +1,10 @@
 #pragma once
 
+#include <libkern/OSMetaClass.h>
 #include <atomic>
 
-class Object {
-    protected:
-	Object();
-	constexpr virtual ~Object() = default;
+class OSObject : public OSMetaClassBase {
+	OSDeclareAbstractStructors(OSObject);
 
     public:
 	/* increment object counter */
@@ -21,6 +20,16 @@ class Object {
 	 * - Free must never fail
 	 */
 	virtual void free();
+
+	template <class T> T *safe_cast()
+	{
+		static_assert(std::is_base_of<OSMetaClassBase, T>::value,
+			      "T not derived from OSMetaClassBase");
+		if (isKindOf(&T::gMetaClass)) {
+			return static_cast<T *>(this);
+		}
+		return nullptr;
+	}
 
     private:
 	std::atomic<std::size_t> refcnt;
