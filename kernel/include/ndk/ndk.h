@@ -49,6 +49,17 @@ static inline bool spinlock_try_lock(spinlock_t *spinlock)
 	return __atomic_compare_exchange_n(&spinlock->flag, &unlocked, 1, 0,
 					   __ATOMIC_ACQUIRE, __ATOMIC_RELAXED);
 }
+
+[[nodiscard]] static inline int spinlock_try_lock_intr(spinlock_t *spinlock)
+{
+	int old = port_set_ints(0);
+	bool res = spinlock_try_lock(spinlock);
+	if (res)
+		return old;
+	port_set_ints(old);
+	return -1;
+}
+
 static inline void spinlock_release_lower(spinlock_t *spinlock, irql_t old)
 {
 	spinlock_release(spinlock);
@@ -62,7 +73,7 @@ static inline void spinlock_release_lower(spinlock_t *spinlock, irql_t old)
 	return old;
 }
 
-static inline int spinlock_acquire_intr(spinlock_t *spinlock)
+[[nodiscard]] static inline int spinlock_acquire_intr(spinlock_t *spinlock)
 {
 	int old = port_set_ints(0);
 	spinlock_acquire(spinlock);

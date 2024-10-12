@@ -7,7 +7,7 @@ subdir('boot')
 subdir('sched')
 
 subdir('libkern')
-subdir('dkit')
+subdir('devkit')
 
 if (use_limine)
   subdir('platform/limine-generic')

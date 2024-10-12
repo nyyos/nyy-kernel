@@ -15,7 +15,7 @@
 #include <ndk/cpudata.h>
 #include <ndk/sched.h>
 #include <ndk/dpc.h>
-#include <dkit/console.h>
+#include <DevKit/console.h>
 
 #define LIMINE_REQ __attribute__((used, section(".requests")))
 

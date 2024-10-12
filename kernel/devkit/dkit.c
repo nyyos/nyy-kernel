@@ -1,4 +1,4 @@
-#include <dkit/dkit.h>
+#include <DevKit/DevKit.h>
 
 [[gnu::weak]] void port_pci_init() {}
 

@@ -9,7 +9,7 @@
 #include <ndk/vm.h>
 #include <ndk/dpc.h>
 #include <ndk/time.h>
-#include <ndk/int.h>
+#include <ndk/softint.h>
 
 static kmem_cache_t *thread_cache = nullptr;
 

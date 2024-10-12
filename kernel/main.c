@@ -4,8 +4,8 @@
 #include <ndk/kmem.h>
 #include <ndk/vm.h>
 #include <ndk/time.h>
-#include <dkit/acpi.h>
-#include <dkit/dkit.h>
+#include <DevKit/acpi.h>
+#include <DevKit/DevKit.h>
 
 static cpudata_t bsp_data;
 
@@ -85,6 +85,7 @@ void kickstart_kmain(void *, void *)
 }
 
 extern void test_fn();
+extern void libkern_init();
 
 static void kmain_threaded(void *, void *)
 {
@@ -104,8 +105,8 @@ static void kmain_threaded(void *, void *)
 	port_start_cores();
 #endif
 
+	libkern_init();
 	dkit_init();
-
 	test_fn();
 
 #if 0 

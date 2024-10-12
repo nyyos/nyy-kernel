@@ -7,7 +7,7 @@
 #include <ndk/kmem.h>
 #include <ndk/vm.h>
 #include <ndk/ndk.h>
-#include <dkit/pci.h>
+#include <DevKit/pci.h>
 #include "asm.h"
 
 #define MCFG_MAPPING_SIZE(buscount) (4096l * 8l * 32l * (buscount))

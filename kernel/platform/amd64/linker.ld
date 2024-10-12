@@ -35,6 +35,9 @@ SECTIONS
     PROVIDE(addr_rodata_start = .);
 
     .rodata : {
+        PROVIDE_HIDDEN(init_array_start = .);
+        *(.init_array .init_array.*)
+        PROVIDE_HIDDEN(init_array_end = .);
         *(.rodata .rodata.*)
     } :rodata
 

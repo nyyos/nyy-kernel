@@ -72,6 +72,10 @@ struct tu_function_type_mismatch {
 	struct tu_source_location location;
 };
 
+struct tu_handle_nonnul_return_v1 {
+	struct tu_source_location location;
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -171,6 +175,11 @@ void __ubsan_handle_function_type_mismatch(
 	struct tu_function_type_mismatch *data)
 {
 	tu_print_location("function type mismatch", data->location);
+}
+
+void __ubsan_handle_nonnull_return_v1(struct tu_handle_nonnul_return_v1 *data)
+{
+	tu_print_location("non-null return", data->location);
 }
 
 #ifdef __cplusplus

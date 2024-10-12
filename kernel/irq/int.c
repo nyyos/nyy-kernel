@@ -1,4 +1,4 @@
-#include <ndk/int.h>
+#include <ndk/softint.h>
 #include <ndk/ndk.h>
 #include <ndk/dpc.h>
 #include <ndk/cpudata.h>

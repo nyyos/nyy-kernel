@@ -4,7 +4,7 @@
 #include <limine-generic.h>
 #include <ndk/vm.h>
 #include <ndk/time.h>
-#include <dkit/console.h>
+#include <DevKit/console.h>
 
 #include "cpuid.h"
 #include "asm.h"

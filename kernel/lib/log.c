@@ -12,7 +12,7 @@
 #include <string.h>
 #include <sys/queue.h>
 #include <ndk/ndk.h>
-#include <dkit/console.h>
+#include <DevKit/console.h>
 
 // XXX: maybe move this out from here...
 static TAILQ_HEAD(console_list,
@@ -93,7 +93,9 @@ void printk_init()
 
 void _printk_consoles_write(const char *buf, size_t size)
 {
-	int old = spinlock_acquire_intr(&console_list_lock);
+	int old = spinlock_try_lock_intr(&console_list_lock);
+	if (old == -1)
+		return;
 	console_t *elm = nullptr;
 	TAILQ_FOREACH(elm, &console_list, queue_entry)
 	{

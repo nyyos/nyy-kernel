@@ -3,7 +3,7 @@
 #include <ndk/ndk.h>
 #include <ndk/cpudata.h>
 #include <ndk/dpc.h>
-#include <ndk/int.h>
+#include <ndk/softint.h>
 
 static int acquire_dpc_lock(cpudata_t *data)
 {

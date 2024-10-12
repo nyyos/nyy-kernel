@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <uacpi/uacpi.h>
-#include <dkit/acpi.h>
+#include <DevKit/acpi.h>
 
 void acpi_early_init(uintptr_t rsdp)
 {

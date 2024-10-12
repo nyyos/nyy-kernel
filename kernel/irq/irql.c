@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <ndk/irql.h>
 #include <ndk/cpudata.h>
-#include <ndk/int.h>
+#include <ndk/softint.h>
 
 irql_t irql_raise(irql_t level)
 {
