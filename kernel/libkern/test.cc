@@ -1,3 +1,4 @@
+#include "libkern/OSString.h"
 #include <ndk/ndk.h>
 #include <libkern/mutex.hpp>
 #include <libkern/OSObject.h>
@@ -14,13 +15,11 @@ struct Foo : public OSObject {
 	{
 		if (!super::init())
 			return false;
-		printk("init foo\n");
 		return true;
 	}
 
 	virtual void free() override
 	{
-		printk("free foo\n");
 		super::free();
 	}
 };
@@ -35,13 +34,11 @@ struct Bar final : public Foo {
 	{
 		if (!super::init())
 			return false;
-		printk("init bar\n");
 		return true;
 	}
 
 	virtual void free() override
 	{
-		printk("free bar\n");
 		super::free();
 	}
 };
@@ -63,12 +60,20 @@ void test_fn_cpp()
 	auto asBar = asFoo->safe_cast<Bar>();
 	assert(asBar != nullptr);
 
-	printk("asFoo:%s\n", asFoo->getMetaClass()->getClassName());
-	printk("asBar:%s\n", asBar->getMetaClass()->getClassName());
-
 	inst3->release();
 	inst2->release();
 	inst->release();
+
+	char buf[512];
+	memset(buf, 0x0, sizeof(buf));
+	memcpy(buf, "HELLO WORLD", sizeof("HELLO WORLD"));
+	auto str1 = OSString::fromCStr(buf);
+	printk("%s\n", str1->getCStr());
+	auto str2 = OSString::fromStr(str1);
+	assert(str1->getCStr() != str2->getCStr());
+	str1->release();
+	printk("%s\n", str2->getCStr());
+	str2->release();
 
 	auto mut = lk::Mutex();
 	lk::unique_lock<lk::Mutex> uniq;

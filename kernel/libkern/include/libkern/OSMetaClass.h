@@ -1,6 +1,5 @@
 #pragma once
 
-#include <libkern/string.hpp>
 #include <string.h>
 
 class OSMetaClass;
