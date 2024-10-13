@@ -49,7 +49,9 @@ void OSObject::retain()
 
 void OSObject::free()
 {
+#if 0
 	printk(DEBUG "free() object base: %p\n", this);
+#endif
 	delete this;
 }
 

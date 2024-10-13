@@ -1,7 +1,9 @@
 #include "libkern/OSString.h"
+#include "libkern/OSSymbol.h"
 #include <ndk/ndk.h>
 #include <libkern/mutex.hpp>
 #include <libkern/OSObject.h>
+#include <libkern/HashMap.h>
 
 #include <DevKit/IORegistry.h>
 
@@ -68,12 +70,22 @@ void test_fn_cpp()
 	memset(buf, 0x0, sizeof(buf));
 	memcpy(buf, "HELLO WORLD", sizeof("HELLO WORLD"));
 	auto str1 = OSString::fromCStr(buf);
-	printk("%s\n", str1->getCStr());
 	auto str2 = OSString::fromStr(str1);
 	assert(str1->getCStr() != str2->getCStr());
 	str1->release();
-	printk("%s\n", str2->getCStr());
 	str2->release();
+
+	auto testmap = HashMap<int, int>();
+	testmap.insert(1, 1);
+
+	{
+		auto sym1 = OSSymbol::fromCStr("test");
+		auto str = OSString::fromCStr("test");
+		auto sym2 = OSSymbol::fromStr(str);
+		str->release();
+		assert(sym1 == sym2);
+		sym1->release(1);
+	}
 
 	auto mut = lk::Mutex();
 	lk::unique_lock<lk::Mutex> uniq;

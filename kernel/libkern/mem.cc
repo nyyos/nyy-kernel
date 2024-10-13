@@ -1,5 +1,6 @@
 #include <ndk/kmem.h>
 #include <string.h>
+#include <ndk/ndk.h>
 
 void *operator new(unsigned long sz)
 {
@@ -25,6 +26,13 @@ void *operator new[](unsigned long sz)
 	*tag = sz_actual;
 	tag++;
 	return (void *)ALIGN_UP((uintptr_t)++tag, 16);
+}
+
+void operator delete[](void *ptr, unsigned long sz)
+{
+	size_t *p = static_cast<size_t *>(ptr);
+	p -= 2;
+	kfree(p, *p);
 }
 
 void operator delete[](void *ptr)

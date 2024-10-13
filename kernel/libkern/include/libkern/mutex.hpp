@@ -131,13 +131,14 @@ template <BasicLockable Mutex> class unique_lock {
 		swap(*this, other);
 	}
 
-	unique_lock &operator=(unique_lock other)
+	unique_lock &operator=(unique_lock &&other)
 	{
 		swap(*this, other);
 		return *this;
 	}
 
 	unique_lock(const unique_lock &) = delete;
+	unique_lock &operator=(const unique_lock &other) = delete;
 
 	void unlock()
 	{
