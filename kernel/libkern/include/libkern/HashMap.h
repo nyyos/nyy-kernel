@@ -178,10 +178,10 @@ class HashMap {
 				continue;
 
 			auto dest = findEntry(entries, capacity, entry);
-			dest->key = entry.key;
-			dest->value = entry.value;
+			dest->key = std::move(entry.key);
+			dest->value = std::move(entry.value);
 			dest->valid = true;
-			dest->hash = entry.hash;
+			dest->hash = std::move(entry.hash);
 			m_count++;
 		}
 
