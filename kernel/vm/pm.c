@@ -98,6 +98,7 @@ page_t *pm_allocate_n(size_t n, short usage)
 	assert(n == 1);
 	spinlock_acquire(&buddy_lock);
 	page_t *pg = TAILQ_FIRST(&buddy_freelist[0]);
+	assert(pg);
 	pg->usage = usage;
 	TAILQ_REMOVE(&buddy_freelist[0], pg, queue_entry);
 	__atomic_fetch_add(&vmstat.used, n, __ATOMIC_RELAXED);

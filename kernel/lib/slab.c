@@ -92,6 +92,8 @@ static void *slab_alloc(kmem_slab_t *sp)
 
 static void slab_free(kmem_slab_t *sp, kmem_bufctl_t *bufctl)
 {
+	assert(sp);
+	assert(bufctl);
 	if (sp->refcnt == sp->parent_cache->slabcap) {
 		LIST_REMOVE(sp, entry);
 		LIST_INSERT_HEAD(&sp->parent_cache->slablist, sp, entry);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ndk/ndk.h"
 #include <functional>
 #include <cstddef>
 #include <optional>
@@ -34,7 +35,7 @@ class HashMap {
 	HashMap(size_t initial, Compare compare = Compare(), Hash hash = Hash())
 		: m_capacity{ initial }
 		, m_count{ 0 }
-		, m_entries{ new MapEntry[initial] }
+		, m_entries{ new MapEntry[initial]() }
 		, compare{ compare }
 		, hashfn{ hash }
 	{
@@ -137,6 +138,77 @@ class HashMap {
 			return {};
 
 		return entry->value;
+	}
+
+	class iterator {
+	    public:
+		using iterator_category = std::forward_iterator_tag;
+		using difference_type = std::ptrdiff_t;
+		using value_type = std::pair<K, V>;
+		using pointer = value_type *;
+		using reference = value_type &;
+
+		iterator(MapEntry *ptr, MapEntry *end)
+			: m_ptr{ ptr }
+			, m_end{ end }
+		{
+			advanceToValid();
+		}
+
+		value_type operator*() const
+		{
+			return { m_ptr->key, m_ptr->value };
+		}
+
+		pointer operator->() const
+		{
+			return &(**this);
+		}
+
+		iterator &operator++()
+		{
+			++m_ptr;
+			advanceToValid();
+			return *this;
+		}
+
+		iterator operator++(int)
+		{
+			iterator tmp = *this;
+			++(*this);
+			return tmp;
+		}
+
+		bool operator==(const iterator &other) const
+		{
+			return m_ptr == other.m_ptr;
+		}
+
+		bool operator!=(const iterator &other) const
+		{
+			return !(*this == other);
+		}
+
+	    private:
+		MapEntry *m_ptr;
+		MapEntry *m_end;
+
+		void advanceToValid()
+		{
+			while (m_ptr != m_end && !m_ptr->valid) {
+				++m_ptr;
+			}
+		}
+	};
+
+	iterator begin()
+	{
+		return iterator(m_entries, m_entries + m_capacity);
+	}
+
+	iterator end()
+	{
+		return iterator(m_entries + m_capacity, m_entries + m_capacity);
 	}
 
     private:

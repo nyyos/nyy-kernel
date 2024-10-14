@@ -31,6 +31,11 @@ class OSObject : public OSMetaClassBase {
 		return nullptr;
 	}
 
+	size_t getRefcount() const
+	{
+		return refcnt;
+	}
+
     private:
 	std::atomic<std::size_t> refcnt;
 };

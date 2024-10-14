@@ -1,3 +1,4 @@
+#include "libkern/OSDictionary.h"
 #include "libkern/OSString.h"
 #include "libkern/OSSymbol.h"
 #include <ndk/ndk.h>
@@ -74,6 +75,23 @@ void test_fn_cpp()
 	assert(str1->getCStr() != str2->getCStr());
 	str1->release();
 	str2->release();
+
+	auto dict = (OSDictionary *)OSDictionary::gMetaClass.alloc();
+	dict->init();
+	{
+		auto str = OSString::fromCStr("Hello World");
+		dict->set("test", str);
+	}
+
+	OSString *str;
+	{
+		auto res = dict->get(OSSymbol::fromCStr("test"));
+		assert(res);
+		str = res->safe_cast<OSString>();
+		str->release();
+	}
+
+	dict->release();
 
 	auto testmap = HashMap<int, int>();
 	testmap.insert(1, 1);

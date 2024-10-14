@@ -326,8 +326,13 @@ void *vmem_xalloc(Vmem *vmp, size_t size, size_t align, size_t phase,
 	}
 	assert((align % vmp->quantum) == 0);
 
-	if (!(vmflag & VM_BESTFIT) && !(vmflag & VM_INSTANTFIT))
-		vmflag = VM_INSTANTFIT;
+	// some bug idk
+	// causes all memory to be used, some infinite recursion
+	// caused by vm_kalloc > 3
+	// just unconditionally set this
+	// XXX: fix
+	vmflag &= ~VM_INSTANTFIT;
+	vmflag |= VM_BESTFIT;
 
 	if (!(vmflag & VM_BOOTSTRAP))
 		ASSERT(repopulate_segments() == 0);
@@ -348,8 +353,10 @@ void *vmem_xalloc(Vmem *vmp, size_t size, size_t align, size_t phase,
 			}
 
 			/* We just get the first segment from the list. This ensures constant-time allocation.
-             * Note that we do not need to check the size of the segments because they are guaranteed to be big enough (see freelist_for_size)
-             */
+			* Note that we do not need to check the size of 
+			* the segments because they are guaranteed to be 
+			* big enough (see freelist_for_size)
+			*/
 			for (list = first_list; list < end; list++) {
 				seg = LIST_FIRST(list);
 				if (seg != NULL) {

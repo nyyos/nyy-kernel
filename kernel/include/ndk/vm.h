@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "lib/vmem.h"
 #include <ndk/port.h>
 #include <ndk/util.h>
@@ -115,3 +119,7 @@ void vm_port_activate(vm_map_t *map);
 
 void *vm_kalloc(size_t pages, int flags);
 void vm_kfree(void *addr, size_t pages);
+
+#ifdef __cplusplus
+}
+#endif
