@@ -4,7 +4,6 @@ subdir('acpi')
 kernel_sources += files('dkit.c')
 
 kernel_sources += files(
-  'IORegistry.cc',
   'IORegistryEntry.cc'
 )
 
