@@ -4,7 +4,7 @@ OSDefineMetaClassAndStructors(OSString, OSObject);
 
 OSString *OSString::fromCStr(const char *cstr)
 {
-	auto obj = static_cast<OSString *>(OSString::gMetaClass.alloc());
+	auto obj = OSAlloc<OSString>();
 	if (!obj || !obj->init())
 		return nullptr;
 
@@ -15,7 +15,7 @@ OSString *OSString::fromCStr(const char *cstr)
 
 OSString *OSString::fromStr(const OSString *str)
 {
-	auto obj = static_cast<OSString *>(OSString::gMetaClass.alloc());
+	auto obj = OSAlloc<OSString>();
 	if (!obj->init())
 		return nullptr;
 

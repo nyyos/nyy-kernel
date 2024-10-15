@@ -8,7 +8,7 @@ OSDefineMetaClassAndStructors(OSArray, OSObject);
 
 OSArray *OSArray::makeEmpty()
 {
-	auto arr = (OSArray *)OSArray::gMetaClass.alloc();
+	auto arr = OSAlloc<OSArray>();
 	if (!arr->init()) {
 		arr->free();
 		return nullptr;

@@ -19,7 +19,7 @@ OSSymbol *OSSymbol::fromCStr(const char *cstr)
 		return res.value();
 	}
 
-	auto obj = static_cast<OSSymbol *>(OSSymbol::gMetaClass.alloc());
+	auto obj = OSAlloc<OSSymbol>();
 	if (!obj || !obj->init())
 		return nullptr;
 

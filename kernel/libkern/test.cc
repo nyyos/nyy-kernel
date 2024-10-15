@@ -7,8 +7,6 @@
 #include <libkern/OSObject.h>
 #include <libkern/HashMap.h>
 
-#include <DevKit/IORegistry.h>
-
 struct Foo : public OSObject {
 	OSDeclareDefaultStructors(Foo);
 

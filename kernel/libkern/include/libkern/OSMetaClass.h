@@ -121,3 +121,8 @@ class OSMetaClass : public OSMetaClassBase {
 	const OSMetaClass *superClass;
 	size_t size;
 };
+
+template <class T> constexpr T *OSAlloc()
+{
+	return static_cast<T *>(T::gMetaClass.alloc());
+}
