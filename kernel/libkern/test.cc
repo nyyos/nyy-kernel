@@ -1,3 +1,4 @@
+#include "libkern/OSArray.h"
 #include "libkern/OSDictionary.h"
 #include "libkern/OSString.h"
 #include "libkern/OSSymbol.h"
@@ -111,6 +112,23 @@ void test_fn_cpp()
 		const auto guard = lk::lock_guard(mut);
 		uniq = lk::unique_lock(mut, lk::adopt_lock_t());
 		uniq.release();
+	}
+
+	{
+		auto arr = OSArray::makeEmpty();
+		auto sym = OSSymbol::fromCStr("test");
+		arr->insert(sym);
+		arr->insert(sym);
+		arr->insert(sym);
+		arr->insert(sym);
+		arr->insert(sym);
+		arr->insert(sym);
+		arr->insert(sym);
+		arr->insert(sym);
+		assert(arr->pop() == sym);
+		assert(arr->pop() == sym);
+		sym->release();
+		assert(arr->getCount() == 6);
 	}
 }
 
