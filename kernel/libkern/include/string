@@ -2530,6 +2530,10 @@ constexpr inline string to_string(unsigned long long val)
 // hash support
 namespace detail
 {
+// 4-byte addresses have to be readable unaligned
+static_assert(sizeof(int) == 4);
+
+[[clang::no_sanitize("undefined")]]
 constexpr uint64_t MurmurHash2_64A(const void *key, uint64_t len, uint64_t seed)
 {
 	const uint64_t m = 0xC6A4A7935BD1E995;

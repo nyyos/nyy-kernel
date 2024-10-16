@@ -10,15 +10,19 @@ class OSDictionary : public OSObject {
 	OSDeclareDefaultStructors(OSDictionary);
 
     public:
+	static OSDictionary *makeEmpty();
+	static OSDictionary *makeWithSize(size_t size);
+
 	virtual bool init() override;
+	virtual bool initWithSize(size_t size);
 	virtual void free() override;
 
-	// symbol reference now owned by dictionary
-	virtual void set(OSSymbol *sym, OSObject *value);
+	virtual OSObject *get(const char *str);
 	virtual OSObject *get(OSSymbol *sym);
 	virtual bool unset(OSSymbol *sym);
 
-	virtual void set(std::string_view str, OSObject *value);
+	virtual OSObject *set(std::string_view str, OSObject *value);
+	virtual OSObject *set(OSSymbol *sym, OSObject *value);
 
     protected:
 	HashMap<OSSymbol *, OSObject *> *map;
