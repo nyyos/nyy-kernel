@@ -12,6 +12,7 @@ void mutex_init(mutex_t *mutex)
 
 void mutex_acquire(mutex_t *mutex)
 {
+	assert(mutex);
 	thread_t *thread = curthread();
 	if (mutex->owner != nullptr && mutex->owner == thread) {
 		assert(!"mutex recursive acquire");
