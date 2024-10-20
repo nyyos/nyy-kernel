@@ -21,7 +21,7 @@ void mutex_acquire(mutex_t *mutex)
 retry:
 	irql_t irql = irql_raise(IRQL_DISPATCH);
 	uint8_t unlocked = 0;
-	for (int i = 0; i < 1000; i++) {
+	for (int i = 0; i < 10000; i++) {
 		if (__atomic_compare_exchange_n(&mutex->flag, &unlocked, 1, 0,
 						__ATOMIC_ACQUIRE,
 						__ATOMIC_RELAXED)) {
