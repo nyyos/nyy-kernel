@@ -1,9 +1,11 @@
 #pragma once
 
+#include <atomic>
 #include <string.h>
 
 class OSMetaClass;
 class OSObject;
+class OSSymbol;
 
 #define OSDeclareCommonStructors(className)                       \
     private:                                                      \
@@ -91,8 +93,24 @@ class OSMetaClassBase {
     public:
 	virtual const OSMetaClass *getMetaClass() const = 0;
 
+	/* increment object counter */
+	void retain();
+	/* decrement object counter, if cnt==freeWhen free. */
+	void release(int freeWhen = 0);
+
+	virtual bool init() = 0;
+	virtual void free() = 0;
+
+	size_t getRefcount() const
+	{
+		return refcnt;
+	}
+
 	// Check if object is kind of class
 	bool isKindOf(const OSMetaClass *clazz) const;
+
+    protected:
+	std::atomic<size_t> refcnt = 0;
 };
 
 class OSMetaClass : public OSMetaClassBase {
@@ -100,10 +118,13 @@ class OSMetaClass : public OSMetaClassBase {
 
     public:
 	OSMetaClass(const char *className, const OSMetaClass *superClass,
-		    size_t size)
-		: name{ className }
-		, superClass{ superClass }
-		, size{ size }
+		    size_t size);
+
+	virtual bool init() override
+	{
+		return true;
+	}
+	virtual void free() override
 	{
 	}
 
@@ -116,8 +137,13 @@ class OSMetaClass : public OSMetaClassBase {
 
 	const char *getClassName() const;
 
+	static void initialize();
+	static void *preModLoad(const char *ident);
+	static bool checkModLoad(void *loadhandle);
+	static int postModLoad(void *loadhandle);
+
     private:
-	const char *name;
+	OSSymbol *className;
 	const OSMetaClass *superClass;
 	size_t size;
 };

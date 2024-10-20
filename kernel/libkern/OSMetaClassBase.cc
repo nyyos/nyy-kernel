@@ -1,3 +1,4 @@
+#include <libkern/OSSymbol.h>
 #include <libkern/OSMetaClass.h>
 
 OSMetaClassBase::~OSMetaClassBase()
@@ -18,5 +19,5 @@ bool OSMetaClassBase::isKindOf(const OSMetaClass *clazz) const
 
 const char *OSMetaClass::getClassName() const
 {
-	return name;
+	return className->getCStr();
 }

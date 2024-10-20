@@ -7,6 +7,7 @@ kernel_sources += files(
   'test.cc',
   'OSObject.cc',
   'OSMetaClassBase.cc',
+  'OSMetaClass.cc',
   'OSString.cc',
   'OSSymbol.cc',
   'OSDictionary.cc',

@@ -6,17 +6,17 @@ OSObject::MetaClass OSObject ::gMetaClass;
 const OSMetaClass *const OSObject ::metaClass = &OSObject ::gMetaClass;
 const OSMetaClass *const OSObject ::superClass = nullptr;
 
-OSObject ::OSObject(const OSMetaClass *meta)
-	: refcnt{ 1 }
+OSObject::OSObject(const OSMetaClass *meta)
 {
+	refcnt = 1;
 }
 
 OSObject::OSObject()
-	: refcnt{ 1 }
 {
+	refcnt = 1;
 }
 
-OSObject ::~OSObject()
+OSObject::~OSObject()
 {
 }
 
@@ -35,14 +35,14 @@ OSObject::MetaClass ::MetaClass()
 {
 }
 
-void OSObject::release(int freeWhen)
+void OSMetaClassBase::release(int freeWhen)
 {
 	refcnt.fetch_sub(1, std::memory_order_release);
 	if (refcnt.load() == freeWhen)
 		free();
 }
 
-void OSObject::retain()
+void OSMetaClassBase::retain()
 {
 	refcnt.fetch_add(1, std::memory_order_acquire);
 }

@@ -27,20 +27,14 @@ OSDictionary *OSDictionary::makeWithSize(size_t size)
 
 bool OSDictionary::init()
 {
-	if (!super::init())
-		return false;
-
-	map = new HashMap<OSSymbol *, OSObject *>(16);
-	if (map)
-		return true;
-	return false;
+	return initWithSize(16);
 }
 
 bool OSDictionary::initWithSize(size_t size)
 {
 	if (!super::init())
 		return false;
-	map = new HashMap<OSSymbol *, OSObject *>(size);
+	map = new HashMap<OSSymbol *, OSMetaClassBase *>(size);
 	if (map)
 		return true;
 	return false;
@@ -59,22 +53,23 @@ void OSDictionary::free()
 	super::free();
 }
 
-OSObject *OSDictionary::set(OSSymbol *sym, OSObject *value)
+bool OSDictionary::set(OSSymbol *sym, OSMetaClassBase *value)
 {
-	if (!map->lookup(sym).has_value())
+	auto ret = map->update(sym, value);
+	value->retain();
+	if (!ret.has_value())
 		sym->retain();
-	auto ret = map->update(sym, value).value_or(nullptr);
-	return ret;
+	else
+		ret.value()->release();
+	return true;
 }
 
-OSObject *OSDictionary::set(std::string_view str, OSObject *value)
+bool OSDictionary::set(std::string_view str, OSMetaClassBase *value)
 {
 	auto key = OSSymbol::fromCStr(str.data());
-	auto ret = map->update(key, value);
-	if (ret.has_value())
-		key->release();
-	value->retain();
-	return ret.value_or(nullptr);
+	auto res = set(key, value);
+	key->release();
+	return res;
 }
 
 OSObject *OSDictionary::get(const char *str)
@@ -91,7 +86,7 @@ OSObject *OSDictionary::get(OSSymbol *sym)
 	if (res.has_value()) {
 		auto val = res.value();
 		val->retain();
-		return val;
+		return static_cast<OSObject *>(val);
 	}
 	return nullptr;
 }

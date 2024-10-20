@@ -33,6 +33,11 @@ class Mutex {
 		mutex_acquire(&_mutex);
 	}
 
+	bool is_locked()
+	{
+		return _mutex.owner != nullptr;
+	}
+
     private:
 	mutex_t _mutex;
 };

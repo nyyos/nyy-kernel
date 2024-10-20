@@ -7,19 +7,14 @@ class OSObject : public OSMetaClassBase {
 	OSDeclareAbstractStructors(OSObject);
 
     public:
-	/* increment object counter */
-	void retain();
-	/* decrement object counter, if cnt==freeWhen free. */
-	void release(int freeWhen = 0);
-
-	virtual bool init();
+	virtual bool init() override;
 
 	/* Keep in mind that:
 	 * - Object::free will call delete on the object
 	 * - Free may be called before initialization is complete
 	 * - Free must never fail
 	 */
-	virtual void free();
+	virtual void free() override;
 
 	template <class T> T *safe_cast()
 	{
@@ -30,12 +25,4 @@ class OSObject : public OSMetaClassBase {
 		}
 		return nullptr;
 	}
-
-	size_t getRefcount() const
-	{
-		return refcnt;
-	}
-
-    private:
-	std::atomic<std::size_t> refcnt;
 };

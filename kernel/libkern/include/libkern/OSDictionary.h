@@ -21,9 +21,9 @@ class OSDictionary : public OSObject {
 	virtual OSObject *get(OSSymbol *sym);
 	virtual bool unset(OSSymbol *sym);
 
-	virtual OSObject *set(std::string_view str, OSObject *value);
-	virtual OSObject *set(OSSymbol *sym, OSObject *value);
+	virtual bool set(std::string_view str, OSMetaClassBase *value);
+	virtual bool set(OSSymbol *sym, OSMetaClassBase *value);
 
     protected:
-	HashMap<OSSymbol *, OSObject *> *map;
+	HashMap<OSSymbol *, OSMetaClassBase *> *map;
 };
