@@ -5,10 +5,10 @@ loadedconfig = keyval.load('.config')
 conf = configuration_data(loadedconfig)
 prog_python = find_program('python3')
 autoconf_header = custom_target('gen-autoconf',
-  input : [meson.source_root() + '/.config'],
+  input : [meson.project_source_root() + '/.config'],
   output : ['autoconf.h'],
-  env : {'KCONFIG_CONFIG': meson.source_root() + '/.config', 'ROOT': meson.source_root()},
-  command : [prog_python, meson.source_root() + '/vendor/kconfiglib/genconfig.py', '--header-path', '@OUTPUT0@', meson.source_root()+'/Kconfig']
+  env : {'KCONFIG_CONFIG': meson.project_source_root() + '/.config', 'ROOT': meson.project_source_root()},
+  command : [prog_python, meson.project_source_root() + '/vendor/kconfiglib/genconfig.py', '--header-path', '@OUTPUT0@', meson.project_source_root()+'/Kconfig']
 )
 autoconf_dep = declare_dependency(sources: autoconf_header)
 

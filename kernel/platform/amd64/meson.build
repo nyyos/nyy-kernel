@@ -40,5 +40,5 @@ custom_target('generate symbols',
           depends : nyy,
           input : nyy,
           output : 'symbols.map',
-          command : [meson.source_root()+'/tools/gen-symmap.sh', '@INPUT@', '@OUTPUT@'],
+          command : [meson.project_source_root()+'/tools/gen-symmap.sh', '@INPUT@', '@OUTPUT@'],
           build_by_default : true)
