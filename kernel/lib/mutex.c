@@ -13,13 +13,15 @@ void mutex_init(mutex_t *mutex)
 void mutex_acquire(mutex_t *mutex)
 {
 	assert(mutex);
+	irql_t irql;
 	thread_t *thread = curthread();
 	if (mutex->owner != nullptr && mutex->owner == thread) {
 		assert(!"mutex recursive acquire");
 	}
 
 retry:
-	irql_t irql = irql_raise(IRQL_DISPATCH);
+
+	irql = irql_raise(IRQL_DISPATCH);
 	uint8_t unlocked = 0;
 	for (int i = 0; i < 10000; i++) {
 		if (__atomic_compare_exchange_n(&mutex->flag, &unlocked, 1, 0,
