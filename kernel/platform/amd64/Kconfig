@@ -2,4 +2,6 @@ menu "platform options"
 	config SERIAL
 		bool "Enable serial output"
 		default y
+
+	source "$(ROOT)/kernel/platform/limine-generic/Kconfig"
 endmenu

@@ -1,0 +1,5 @@
+# this file shall be included by every limine target
+
+config EARLY_FRAMEBUFFER
+	bool "Enable early framebuffer output"
+	default y

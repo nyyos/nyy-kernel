@@ -15,6 +15,7 @@
 #include <ndk/cpudata.h>
 #include <ndk/sched.h>
 #include <ndk/dpc.h>
+#include <nyyconf.h>
 #include <DevKit/console.h>
 
 #define LIMINE_REQ __attribute__((used, section(".requests")))
@@ -119,6 +120,7 @@ void early_fb_write(console_t *console, const char *buf, size_t size)
 static early_fb_console_t early_fb_console;
 static void early_fb_init()
 {
+#ifdef CONFIG_EARLY_FRAMEBUFFER
 	struct limine_framebuffer_response *res = fb_request.response;
 	for (size_t i = 0; i < res->framebuffer_count; i++) {
 		struct limine_framebuffer *fb = res->framebuffers[i];
@@ -135,6 +137,7 @@ static void early_fb_init()
 		console_add((console_t *)cons);
 		break;
 	}
+#endif
 }
 
 [[gnu::weak]] void limine_bootconsoles_init()
