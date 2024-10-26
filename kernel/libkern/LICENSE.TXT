@@ -28,4 +28,4 @@
 
 See https://opensource.apple.com/apsl/
 
-The implementation of OSObject, OSMetaClass, OSMetaClassBase are all according to the implementation of the XNU versions. Project licenses do NOT apply to these files.
+The implementation of OSObject, OSMetaClass, OSMetaClassBase, OSIterator, OSCollection are all according to the implementation of the XNU versions. Project licenses do NOT apply to these files.

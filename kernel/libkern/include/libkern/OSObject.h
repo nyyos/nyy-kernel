@@ -1,7 +1,6 @@
 #pragma once
 
 #include <libkern/OSMetaClass.h>
-#include <atomic>
 
 class OSObject : public OSMetaClassBase {
 	OSDeclareAbstractStructors(OSObject);
@@ -26,3 +25,10 @@ class OSObject : public OSMetaClassBase {
 		return nullptr;
 	}
 };
+
+template <class T> constexpr T *OSDynamicCast(OSObject *object)
+{
+	if (object == nullptr)
+		return nullptr;
+	return object->safe_cast<T>();
+}

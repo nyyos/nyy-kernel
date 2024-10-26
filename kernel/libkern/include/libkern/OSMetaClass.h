@@ -74,10 +74,16 @@ class OSSymbol;
 	{                                              \
 	}
 
-#define OSDefineAbstractMetaClass(className, superName) \
-	OSMetaClassConstructor(className, superName);   \
-	OSDefineMetaClass(className, superName);        \
-	OSDefineDefaultStructors(className, superName);
+#define OSDefineAbstractStructors(className, superName) \
+	OSObject *className ::MetaClass::alloc() const  \
+	{                                               \
+		return nullptr;                         \
+	}
+
+#define OSDefineMetaClassAndAbstractStructors(className, superName) \
+	OSDefineMetaClass(className, superName);                    \
+	OSMetaClassConstructor(className, superName);               \
+	OSDefineAbstractStructors(className, superName);
 
 #define OSDefineMetaClassAndStructors(className, superName) \
 	OSDefineMetaClass(className, superName);            \

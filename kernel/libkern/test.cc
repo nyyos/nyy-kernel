@@ -1,3 +1,5 @@
+#include "DevKit/Common.h"
+#include "DevKit/IOCatalog.h"
 #include "DevKit/IORegistryEntry.h"
 #include "libkern/OSArray.h"
 #include "libkern/OSDictionary.h"
@@ -7,6 +9,7 @@
 #include <libkern/mutex.hpp>
 #include <libkern/OSObject.h>
 #include <libkern/HashMap.h>
+#include <libkern/OSSharedPtr.h>
 
 struct Foo : public OSObject {
 	OSDeclareDefaultStructors(Foo);
@@ -98,6 +101,7 @@ void test_fn_cpp()
 		{
 			auto res = dict->get("test");
 			assert(res);
+			res->retain();
 			str = res->safe_cast<OSString>();
 			assert(str == str_orig);
 			assert(str->getRefcount() == 2);
@@ -157,7 +161,25 @@ void test_fn_cpp()
 		arr->release();
 	}
 
-	IORegistryEntry::InitRegistry();
+	{
+		auto sym = OSSymbol::fromCStr("test");
+		assert(sym->getRefcount() == 1);
+		{
+			auto ptr = OSMakeShared(OSSymbol::fromCStr("test"));
+			assert(sym->getRefcount() == 2);
+			assert(sym == ptr.get());
+		}
+		assert(sym->getRefcount() == 1);
+		sym->release();
+	}
+
+	auto ps2Pers = OSDictionary::makeEmpty();
+	ps2Pers->set(kIoProviderClassKey, "IOACPIDevice");
+	ps2Pers->set(kIoClassKey, "PS2Controller");
+	auto catalog = IOCatalog::Initialize();
+	catalog->addPersonality(*ps2Pers);
+	auto root = IORegistryEntry::InitRegistry();
+	(volatile void)root;
 }
 
 extern "C" {

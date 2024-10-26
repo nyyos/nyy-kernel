@@ -11,5 +11,7 @@ kernel_sources += files(
   'OSString.cc',
   'OSSymbol.cc',
   'OSDictionary.cc',
-  'OSArray.cc'
+  'OSArray.cc',
+  'OSIterator.cc',
+  'OSCollection.cc'
 )

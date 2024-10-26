@@ -8,8 +8,8 @@ Root (abstract registry root, platform independant)
         └── USBDevice (your USB device)
 ```
 ## Driver matching
-# Driver Catalogue
-Independent from the IO Registry exists the IO Catalogue, storing information about available drivers and loading+probing them on demand. It is responsible for matching Nubs to Drivers etc.
+# Driver Catalog
+Independent from the IO Registry exists the IO Catalog, storing information about available drivers and loading+probing them on demand. It is responsible for matching Nubs to Drivers etc.
 
 # Future plans
-In the (not near) future I want to implement automatic driver matching/loading, possibly inspired by Apple's Info.plist in their KEXTs. Drivers should register to the Catalogue automatically, eventually being unloaded aswell again.
+In the (not near) future I want to implement automatic driver matching/loading, possibly inspired by Apple's Info.plist in their KEXTs. Drivers should register to the Catalog automatically, eventually being unloaded aswell again.

@@ -17,7 +17,7 @@ static constexpr int kClassCapacityIncrement = 40;
 enum { kNoDictonaries = 1, kMakingDictonaries, kCompletedBootstrap };
 
 static int sBootstrapState = kNoDictonaries;
-static OSDictionary *sAllClassesDict;
+static OSSharedPtr<OSDictionary> sAllClassesDict = nullptr;
 static StalledData *sStalled;
 static mutex_t sAllClassesLock;
 static mutex_t sStalledLock;
@@ -82,7 +82,8 @@ int OSMetaClass::postModLoad(void *loadhandle)
 			auto ent = sAllClassesDict->get(
 				(const char *)me->className);
 			if (ent) {
-				printk("class %s is duplicate",
+				printk("in mod '%s': class %s is duplicate",
+				       modName->getCStr(),
 				       (const char *)me->className);
 				break;
 			}
@@ -110,7 +111,7 @@ int OSMetaClass::postModLoad(void *loadhandle)
 	}
 
 	if (sStalled) {
-		printk(INFO "module %s loaded %ld classes\n",
+		printk(INFO "module '%s' loaded %ld classes\n",
 		       sStalled->modIdent, sStalled->count);
 		kfree(sStalled->classes,
 		      sizeof(OSMetaClass *) * sStalled->capacity);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "libkern/OSSharedPtr.h"
 #include <cstddef>
 #include <libkern/OSObject.h>
 
@@ -7,8 +8,8 @@ class OSArray : public OSObject {
 	OSDeclareDefaultStructors(OSArray);
 
     public:
-	static OSArray *makeEmpty();
-	static OSArray *fromArray(OSArray *array);
+	static OSSharedPtr<OSArray> makeEmpty();
+	static OSSharedPtr<OSArray> fromArray(OSArray *array);
 
 	virtual bool init() override;
 	virtual void free() override;

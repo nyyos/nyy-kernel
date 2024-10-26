@@ -5,9 +5,9 @@
 
 OSDefineMetaClassAndStructors(OSDictionary, OSObject);
 
-OSDictionary *OSDictionary::makeEmpty()
+OSSharedPtr<OSDictionary> OSDictionary::makeEmpty()
 {
-	auto obj = OSAlloc<OSDictionary>();
+	auto obj = OSMakeShared<OSDictionary>();
 	if (!obj->init()) {
 		obj->release();
 		return nullptr;
@@ -15,9 +15,9 @@ OSDictionary *OSDictionary::makeEmpty()
 	return obj;
 }
 
-OSDictionary *OSDictionary::makeWithSize(size_t size)
+OSSharedPtr<OSDictionary> OSDictionary::makeWithSize(size_t size)
 {
-	auto obj = OSAlloc<OSDictionary>();
+	auto obj = OSMakeShared<OSDictionary>();
 	if (!obj->initWithSize(size)) {
 		obj->release();
 		return nullptr;
@@ -34,7 +34,7 @@ bool OSDictionary::initWithSize(size_t size)
 {
 	if (!super::init())
 		return false;
-	map = new HashMap<OSSymbol *, OSMetaClassBase *>(size);
+	map = new HashMap<const OSSymbol *, OSMetaClassBase *>(size);
 	if (map)
 		return true;
 	return false;
@@ -45,7 +45,7 @@ void OSDictionary::free()
 	if (map) {
 		for (const auto &[key, value] : *map) {
 			map->remove(key);
-			key->release();
+			const_cast<OSSymbol *>(key)->release();
 			value->release();
 		}
 	}
@@ -53,54 +53,60 @@ void OSDictionary::free()
 	super::free();
 }
 
-bool OSDictionary::set(OSSymbol *sym, OSMetaClassBase *value)
+bool OSDictionary::set(const OSSymbol *sym, OSMetaClassBase *value)
 {
 	auto ret = map->update(sym, value);
 	value->retain();
 	if (!ret.has_value())
-		sym->retain();
+		const_cast<OSSymbol *>(sym)->retain();
 	else
 		ret.value()->release();
 	return true;
 }
 
-bool OSDictionary::set(std::string_view str, OSMetaClassBase *value)
+bool OSDictionary::set(const char *str, OSMetaClassBase *value)
 {
-	auto key = OSSymbol::fromCStr(str.data());
+	auto key = OSSymbol::fromCStr(str);
 	auto res = set(key, value);
 	key->release();
 	return res;
 }
 
+bool OSDictionary::set(const char *key, const char *value)
+{
+	auto val = OSSymbol::fromCStr(value);
+	auto res = set(key, val);
+	val->release();
+	return res;
+}
+
 OSObject *OSDictionary::get(const char *str)
 {
-	auto sym = OSSymbol::fromCStr(str);
+	const auto sym = OSSymbol::fromCStr(str);
 	auto res = OSDictionary::get(sym);
 	sym->release();
 	return res;
 }
 
-OSObject *OSDictionary::get(OSSymbol *sym)
+OSObject *OSDictionary::get(const OSSymbol *sym)
 {
 	auto res = map->lookup(sym);
 	if (res.has_value()) {
 		auto val = res.value();
-		val->retain();
 		return static_cast<OSObject *>(val);
 	}
 	return nullptr;
 }
 
-bool OSDictionary::unset(OSSymbol *sym)
+bool OSDictionary::unset(const OSSymbol *sym)
 {
 	auto old_maybe = map->lookup(sym);
 	if (!old_maybe.has_value()) {
-		sym->release();
 		return false;
 	}
 	auto old = old_maybe.value();
 	auto ret = map->remove(sym);
 	old->release();
-	sym->release(1);
+	const_cast<OSSymbol *>(sym)->release();
 	return ret;
 }

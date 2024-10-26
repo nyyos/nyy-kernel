@@ -6,9 +6,9 @@
 
 OSDefineMetaClassAndStructors(OSArray, OSObject);
 
-OSArray *OSArray::makeEmpty()
+OSSharedPtr<OSArray> OSArray::makeEmpty()
 {
-	auto arr = OSAlloc<OSArray>();
+	auto arr = OSMakeShared<OSArray>();
 	if (!arr->init()) {
 		arr->free();
 		return nullptr;
