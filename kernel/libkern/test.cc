@@ -4,6 +4,7 @@
 #include "libkern/OSArray.h"
 #include "libkern/OSDictionary.h"
 #include "libkern/OSString.h"
+#include <DevKit/IOPlatformExpert.h>
 #include "libkern/OSSymbol.h"
 #include <ndk/ndk.h>
 #include <libkern/mutex.hpp>
@@ -176,6 +177,9 @@ void test_fn_cpp()
 	auto ps2Pers = OSDictionary::makeEmpty();
 	ps2Pers->set(kIoProviderClassKey, "IOACPIDevice");
 	ps2Pers->set(kIoClassKey, "PS2Controller");
+	auto matchKeys = OSArray::makeEmpty();
+	matchKeys->insert("PNP0303");
+	ps2Pers->set(kIoACPIMatchKey, *matchKeys);
 	auto catalog = IOCatalog::Initialize();
 	catalog->addPersonality(*ps2Pers);
 	auto root = IORegistryEntry::InitRegistry();

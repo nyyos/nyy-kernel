@@ -20,6 +20,7 @@ class OSArray : public OSObject {
 	virtual OSObject *getEntry(size_t index);
 
 	virtual void insert(OSObject *obj);
+	virtual void insert(const char *cstr);
 	virtual OSObject *pop();
 
     protected:

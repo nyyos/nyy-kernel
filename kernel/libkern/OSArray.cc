@@ -1,3 +1,4 @@
+#include "libkern/OSSymbol.h"
 #include <libkern/OSArray.h>
 #include <ndk/ndk.h>
 #include <ndk/kmem.h>
@@ -52,6 +53,13 @@ void OSArray::resize(size_t size)
 	}
 	m_array = newArray;
 	m_capacity = size;
+}
+
+void OSArray::insert(const char *cstr)
+{
+	auto obj = OSSymbol::fromCStr(cstr);
+	insert(obj);
+	obj->release();
 }
 
 void OSArray::insert(OSObject *obj)
