@@ -32,7 +32,7 @@ config_h = configure_file(
 
 arch = get_option('arch')
 
-add_languages('c', 'cpp')
+add_languages('c')
 
 warnings = [
   '-Wno-comment', # added because of warning in nanoprintf ??

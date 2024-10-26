@@ -84,9 +84,6 @@ void kickstart_kmain(void *, void *)
 	}
 }
 
-extern void test_fn();
-extern void libkern_init();
-
 static void kmain_threaded(void *, void *)
 {
 	printk(INFO "entered threaded kmain\n");
@@ -105,9 +102,7 @@ static void kmain_threaded(void *, void *)
 	port_start_cores();
 #endif
 
-	libkern_init();
 	dkit_init();
-	test_fn();
 
 #if 0 
 	extern uintptr_t __stack_chk_guard;
