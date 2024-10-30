@@ -1,8 +1,27 @@
 #include <DevKit/DevKit.h>
 
-[[gnu::weak]] void port_pci_init() {}
+extern void port_devkit_init();
 
-void dkit_init()
+extern char builtin_module_start[];
+extern char builtin_module_end[];
+
+dev_node_t gDtRootNode;
+
+dev_plane_t gDeviceTree = {
+	.plane_name = "DeviceTree",
+	.plane_root = &gDtRootNode,
+};
+
+static void load_modules()
 {
-	port_pci_init();
+}
+
+void devkit_init()
+{
+	load_modules();
+
+	dev_node_init(&gDtRootNode, "Root");
+	port_devkit_init();
+
+	dev_print_tree(gDeviceTree.plane_root);
 }

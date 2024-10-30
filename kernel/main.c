@@ -102,7 +102,7 @@ static void kmain_threaded(void *, void *)
 	port_start_cores();
 #endif
 
-	dkit_init();
+	devkit_init();
 
 #if 0 
 	extern uintptr_t __stack_chk_guard;

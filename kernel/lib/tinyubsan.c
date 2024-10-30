@@ -80,9 +80,6 @@ struct tu_handle_missing_return {
 	struct tu_source_location location;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 static void tu_print_location(const char *message,
 			      struct tu_source_location loc)
 {
@@ -191,6 +188,3 @@ void __ubsan_handle_missing_return(struct tu_handle_missing_return *data)
 	tu_print_location("missing return", data->location);
 }
 
-#ifdef __cplusplus
-}
-#endif

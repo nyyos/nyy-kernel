@@ -5,6 +5,7 @@ subdir('vm')
 subdir('irq')
 subdir('boot')
 subdir('sched')
+subdir('obj')
 
 subdir('devkit')
 

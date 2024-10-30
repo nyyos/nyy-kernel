@@ -15,13 +15,13 @@ kernel_sources += files(
   'sched.S', 
   'start.S',
   'stubs.S', 
-  'string.S'
+  'string.S',
+  'devkit.c'
 )
 
 nyy = executable('nyy', 
   kernel_sources,
   c_args: [ freestanding_c_args, '-std=gnu2x'],
-  cpp_args: [ freestanding_cpp_args, '-std=gnu++23' ],
   include_directories: [kernel_include_dirs],
   link_args: [
     '-nostdlib', 

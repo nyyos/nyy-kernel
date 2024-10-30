@@ -27,9 +27,9 @@ static uint32_t pci_legacy_read(uint32_t segment, uint32_t bus, uint32_t slot,
 	assert(bus < 256 && slot < 32 && function < 8 && offset < 256);
 	assert(!(offset & 0b11));
 	uint32_t address = 0x80000000 | (bus << 16) | (slot << 11) |
-			   (function << 8) | (offset & ~0x3);
-	outl(PCI_IO_CONFIG_DATA, address);
-	return inl(PCI_IO_CONFIG_ADDRESS);
+			   (function << 8) | (offset & ~(uint32_t)3);
+	outl(PCI_IO_CONFIG_ADDRESS, address);
+	return inl(PCI_IO_CONFIG_DATA);
 }
 
 static void pci_legacy_write(uint32_t segment, uint32_t bus, uint32_t slot,
@@ -39,16 +39,16 @@ static void pci_legacy_write(uint32_t segment, uint32_t bus, uint32_t slot,
 	assert(bus < 256 && slot < 32 && function < 8 && offset < 256);
 	assert(!(offset & 0b11));
 	uint32_t address = 0x80000000 | (bus << 16) | (slot << 11) |
-			   (function << 8) | (offset & ~0x3);
-	outl(PCI_IO_CONFIG_DATA, address);
+			   (function << 8) | (offset & ~(uint32_t)3);
+	outl(PCI_IO_CONFIG_ADDRESS, address);
 	outl(PCI_IO_CONFIG_DATA, value);
 }
 
 static struct acpi_mcfg_allocation *mcfg_bus(uint32_t segment, uint32_t bus)
 {
 	for (size_t i = 0; i < mcfg_entrycount; i++) {
-		if (mcfg_entries[i].segment != segment &&
-		    mcfg_entries[i].start_bus >= bus &&
+		if (mcfg_entries[i].segment == segment &&
+		    bus >= mcfg_entries[i].start_bus &&
 		    bus <= mcfg_entries[i].end_bus) {
 			return &mcfg_entries[i];
 		}
@@ -60,8 +60,10 @@ static uint32_t pci_mcfg_read(uint32_t segment, uint32_t bus, uint32_t slot,
 			      uint32_t function, uint32_t offset)
 {
 	struct acpi_mcfg_allocation *entry = mcfg_bus(segment, bus);
-	if (entry == nullptr)
+	if (entry == nullptr) {
+		printk("no entry for seg %d bus %d\n", segment, bus);
 		return 0xFFFFFFFF;
+	}
 
 	volatile uint32_t *addr =
 		(volatile uint32_t *)(entry->address +
@@ -129,11 +131,12 @@ void port_pci_init()
 			       entry->start_bus, entry->end_bus);
 		}
 
-		pci_read32 = pci_mcfg_read;
-		pci_write32 = pci_mcfg_write;
+		port_pci_read32 = pci_mcfg_read;
+		port_pci_write32 = pci_mcfg_write;
 	} else {
+		printk(DEBUG "falling back to legacy PCI access\n");
 		// fallback to legacy access
-		pci_read32 = pci_legacy_read;
-		pci_write32 = pci_legacy_write;
+		port_pci_read32 = pci_legacy_read;
+		port_pci_write32 = pci_legacy_write;
 	}
 }

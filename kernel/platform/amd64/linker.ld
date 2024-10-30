@@ -39,6 +39,9 @@ SECTIONS
         *(.init_array .init_array.*)
         PROVIDE_HIDDEN(init_array_end = .);
         *(.rodata .rodata.*)
+        PROVIDE_HIDDEN(builtin_modules_start = .);
+        *(.module .module.*)
+        PROVIDE_HIDDEN(builtin_modules_end = .);
     } :rodata
 
 

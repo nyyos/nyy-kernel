@@ -51,6 +51,7 @@ freestanding_c_args = [
   '-fdata-sections',
   '-fvisibility=hidden',
   '-D__KERNEL__',
+  '-DNYY_PRIVATE',
   warnings,
 ]
 
