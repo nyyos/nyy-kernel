@@ -4,7 +4,6 @@
 #include <ndk/ndk.h>
 #include <DevKit/pci.h>
 #include <stdint.h>
-#include <assert.h>
 #include <string.h>
 
 pci_read_fn *port_pci_read32 = nullptr;
@@ -109,6 +108,12 @@ typedef struct pci_device {
 	dev_node_t hdr;
 
 	uint32_t seg, bus, slot, function;
+
+	uint16_t vendorId;
+	uint16_t deviceId;
+	uint8_t classCode;
+	uint8_t subClass;
+	uint8_t revision;
 } pci_device_t;
 
 typedef struct pci_bus {
@@ -119,6 +124,17 @@ typedef struct pci_bus {
 } pci_bus_t;
 
 static int bus_cnt = 0;
+
+void pci_dev_common_read(pci_device_t *dev)
+{
+	dev->vendorId = vendorId(dev->seg, dev->bus, dev->slot, dev->function);
+	dev->deviceId = deviceId(dev->seg, dev->bus, dev->slot, dev->function);
+	dev->classCode =
+		classCode(dev->seg, dev->bus, dev->slot, dev->function);
+	dev->subClass = subClass(dev->seg, dev->bus, dev->slot, dev->function);
+	dev->revision =
+		revisionId(dev->seg, dev->bus, dev->slot, dev->function);
+}
 
 pci_device_t *pci_create_device(uint32_t slot, uint32_t function)
 {
@@ -163,10 +179,16 @@ static void check_function(pci_bus_t *bus, uint32_t slot, uint32_t function)
 		dev->node.bus = bus->busId;
 		dev->node.slot = slot;
 		dev->node.function = function;
+		pci_dev_common_read(&dev->node);
 		check_bus(dev);
 	}
 
 	pci_device_t *dev = pci_create_device(slot, function);
+	dev->seg = bus->segId;
+	dev->bus = bus->busId;
+	dev->slot = slot;
+	dev->function = function;
+	pci_dev_common_read(dev);
 	dev_node_attach(&dev->hdr, &bus->node.hdr);
 }
 
