@@ -13,7 +13,7 @@ while getopts "kngspHuQGq:10" optchar; do
 	case $optchar in
 	s) qemu_args="$qemu_args -serial stdio" ;;
 	k) qemu_args="$qemu_args -enable-kvm -cpu host" ;;
-	n) qemu_args="$qemu_args -drive file=test.img,if=none,id=nvm -device nvme,serial=deadbeef,drive=nvm" ;;
+	n) qemu_args="$qemu_args -drive file=nvme.img,if=none,id=nvm -device nvme,serial=deadbeef,drive=nvm" ;;
 	p) qemu_args="${qemu_args} -S" ;;
 	q) qemu_args="${qemu_args} ${OPTARG}" ;;
 	Q) print_command=1 ;;

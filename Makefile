@@ -15,7 +15,7 @@ build-linux:
 
 run:
 	./tools/mkiso-$(ARCH).sh
-	./tools/run-$(ARCH).sh -sk
+	./tools/run-$(ARCH).sh -skn
 
 run-hyper:
 	./tools/mkiso-$(ARCH)-hyper.sh
