@@ -84,6 +84,8 @@ void kickstart_kmain(void *, void *)
 	}
 }
 
+extern void PerformFireworksTest();
+
 static void kmain_threaded(void *, void *)
 {
 	printk(INFO "entered threaded kmain\n");
@@ -102,12 +104,15 @@ static void kmain_threaded(void *, void *)
 	port_start_cores();
 #endif
 
+
 	devkit_init();
 
 #if 0 
 	extern uintptr_t __stack_chk_guard;
 	printk(WARN "stack chk guard: %ld\n", __stack_chk_guard);
 #endif
+
+	PerformFireworksTest();
 
 	// XXX: maybe reuse?
 	sched_exit_destroy();

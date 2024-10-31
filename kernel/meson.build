@@ -7,6 +7,8 @@ subdir('boot')
 subdir('sched')
 subdir('obj')
 
+subdir('tests')
+
 subdir('devkit')
 
 if (use_limine)
