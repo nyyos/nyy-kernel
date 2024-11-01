@@ -32,6 +32,8 @@ config_h = configure_file(
 
 arch = get_option('arch')
 
+test_mode = get_option('test_mode')
+
 add_languages('c')
 
 warnings = [
@@ -54,6 +56,12 @@ freestanding_c_args = [
   '-DNYY_PRIVATE',
   warnings,
 ]
+
+if test_mode
+  freestanding_c_args += [
+    '-DTEST_MODE'
+  ]
+endif
 
 if conf.get('CONFIG_STACKGUARD', 'n') == 'y'
   freestanding_c_args += '-fstack-protector-strong'

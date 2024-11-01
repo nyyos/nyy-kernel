@@ -86,12 +86,12 @@ static inline void spinlock_release_intr(spinlock_t *spinlock, int old)
 	port_set_ints(old);
 }
 
-#define INFO "\1"
-#define WARN "\2"
-#define ERR "\3"
-#define DEBUG "\4"
-#define PANIC "\5"
-#define TRACE "\6"
+#define DEBUG "\1"
+#define TRACE "\2"
+#define INFO "\3"
+#define WARN "\4"
+#define ERR "\5"
+#define PANIC "\6"
 
 __attribute__((format(printf, 1, 2))) void printk(const char *fmt, ...);
 __attribute__((format(printf, 1, 2))) void printk_locked(const char *fmt, ...);

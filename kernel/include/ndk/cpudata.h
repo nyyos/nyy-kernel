@@ -36,3 +36,6 @@ static inline cpudata_t *cpudata()
 {
 	return (cpudata_t *)port_get_cpudata();
 }
+
+extern cpudata_t **g_cpudatalist;
+void cpudata_set(int idx, cpudata_t *data);

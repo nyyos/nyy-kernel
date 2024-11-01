@@ -1,11 +1,13 @@
 #include <string.h>
-#include <heap.h>
 #include <ndk/time.h>
 #include <ndk/ndk.h>
 #include <ndk/port.h>
 #include <ndk/kmem.h>
 #include <ndk/dpc.h>
 #include <ndk/cpudata.h>
+#include <sys/tree.h>
+#include <assert.h>
+#include <heap.h>
 
 static kmem_cache_t *g_timer_cache;
 
@@ -60,9 +62,7 @@ void timer_free(timer_t *tp)
 	if (tp->engine != NULL)
 		irql = spinlock_acquire_raise(&tp->engine->lock);
 
-	assert(tp->timer_state == kTimerQueued &&
-		       tp->mode == kTimerPeriodicMode ||
-	       tp->timer_state == kTimerUnused ||
+	assert(tp->timer_state == kTimerUnused ||
 	       tp->timer_state == kTimerFired);
 
 	kmem_cache_free(g_timer_cache, tp);
@@ -73,36 +73,33 @@ void timer_free(timer_t *tp)
 	tp->engine = NULL;
 }
 
-void timer_initialize(timer_t *tp, uint64_t deadline, dpc_t *dpc, int mode)
+void timer_init(timer_t *tp)
 {
 	assert(tp);
 	assert(tp->timer_state != kTimerQueued);
+	obj_init(tp, kObjTypeAnon);
 	tp->engine = NULL;
-	if (mode == kTimerPeriodicMode) {
-		tp->interval = deadline;
-		tp->deadline = -1;
-	} else {
-		tp->interval = -1;
-		tp->deadline = deadline;
-	}
-	tp->dpc = dpc;
-	tp->mode = mode;
+	tp->deadline = -1;
 	tp->timer_state = kTimerUnused;
 }
 
-void timer_reset(timer_t *tp, uint64_t deadline)
+void timer_set(timer_t *tp, uint64_t deadline, dpc_t *dpc)
 {
 	assert(tp);
-	assert(tp->mode == kTimerOneshotMode);
+	irql_t irql = spinlock_acquire_raise(&tp->hdr.object_lock);
+
 	if (tp->timer_state == kTimerQueued) {
 		timer_uninstall(tp, 0);
 	}
+	tp->dpc = dpc;
 	tp->deadline = deadline;
+
+	spinlock_release_lower(&tp->hdr.object_lock, irql);
 }
 
-void timer_reset_in(timer_t *tp, uint64_t in_ns)
+void timer_set_in(timer_t *tp, uint64_t in_ns, dpc_t *dpc)
 {
-	timer_reset(tp, clocksource()->current_nanos() + in_ns);
+	timer_set(tp, clocksource()->current_nanos() + in_ns, dpc);
 }
 
 static void time_engine_progress(dpc_t *dpc, void *context1, void *context2)
@@ -113,66 +110,78 @@ static void time_engine_progress(dpc_t *dpc, void *context1, void *context2)
 
 	while (1) {
 		now = cp->current_nanos();
-		irql_t old = spinlock_acquire_raise(&ep->lock);
+		assert(irql_current() == IRQL_DISPATCH);
+		spinlock_acquire(&ep->lock);
+
 		if (HEAP_EMPTY(&ep->timerlist)) {
 			cpudata()->next_deadline = UINT64_MAX;
 			ep->arm(0);
-			spinlock_release_lower(&ep->lock, old);
+			spinlock_release(&ep->lock);
 			return;
 		}
 
-		if (HEAP_PEEK(&ep->timerlist)->deadline > now) {
-			uint64_t next = HEAP_PEEK(&ep->timerlist)->deadline;
+		timer_t *root = HEAP_PEEK(&ep->timerlist);
+
+		if (root->deadline > now) {
+			uint64_t next = root->deadline;
 			cpudata()->next_deadline = next;
 			ep->arm(next);
-			spinlock_release_lower(&ep->lock, old);
+			spinlock_release(&ep->lock);
 			break;
 		}
 
-		timer_t *timer = HEAP_POP(timerlist, &ep->timerlist);
+		root = HEAP_POP(timerlist, &ep->timerlist);
+		spinlock_acquire(&root->hdr.object_lock);
+		root->engine = nullptr;
 
-		if (timer->mode != kTimerPeriodicMode)
-			timer->engine = nullptr;
+		spinlock_release(&ep->lock);
 
-		spinlock_release_lower(&ep->lock, old);
+		root->timer_state = kTimerFired;
 
-		timer->timer_state = kTimerFired;
-		dpc_t *timerdpc = timer->dpc;
+		if (root->hdr.waitercount) {
+			obj_satisfy(&root->hdr, true, 0);
+			root->hdr.signalcount = 1;
+		}
+
+		dpc_t *timerdpc = root->dpc;
 
 		if (timerdpc) {
 			context1 = timerdpc->context1;
 			context2 = timerdpc->context2;
-			timerdpc->function(timerdpc, context1, context2);
 		}
 
-		if (timer->mode == kTimerPeriodicMode) {
-			if (timer->engine != NULL) {
-				timer->deadline = now + timer->interval;
-				irql_t old = spinlock_acquire_raise(&ep->lock);
-				timer->timer_state = kTimerQueued;
-				HEAP_INSERT(timerlist, &ep->timerlist, timer);
-				spinlock_release_lower(&ep->lock, old);
-			}
+		spinlock_release(&root->hdr.object_lock);
+
+		if (timerdpc) {
+			timerdpc->function(timerdpc, context1, context2);
 		}
 	}
 }
 
 void timer_uninstall(timer_t *tp, int flags)
 {
-	if (flags & kTimerEngineLockHeld) {
-		tp->engine = NULL;
-		return;
-	}
 	timer_engine_t *ep = tp->engine;
-	irql_t irql = spinlock_acquire_raise(&ep->lock);
-	tp->engine = NULL;
-	if (tp->timer_state == kTimerQueued)
+	if (tp->engine != nullptr) {
+		irql_t irql = spinlock_acquire_raise(&ep->lock);
+		spinlock_acquire(&tp->hdr.object_lock);
+
+		HEAP_REMOVE(timerlist, &ep->timerlist, tp);
+
+		tp->engine = nullptr;
+
+		dpc_enqueue(&cpudata()->timer_update, NULL, NULL);
+
 		tp->timer_state = kTimerCanceled;
-	else
-		tp->timer_state = kTimerUnused;
-	HEAP_REMOVE(timerlist, &ep->timerlist, tp);
-	dpc_enqueue(&cpudata()->timer_update, NULL, NULL);
-	spinlock_release_lower(&ep->lock, irql);
+
+		spinlock_release(&tp->hdr.object_lock);
+		spinlock_release_lower(&ep->lock, irql);
+	} else {
+		irql_t irql = spinlock_acquire_raise(&tp->hdr.object_lock);
+
+		tp->timer_state = kTimerCanceled;
+
+		spinlock_release_lower(&tp->hdr.object_lock, irql);
+	}
 }
 
 void timer_install(timer_t *tp, void *context1, void *context2)
@@ -180,16 +189,28 @@ void timer_install(timer_t *tp, void *context1, void *context2)
 	assert(tp->timer_state != kTimerQueued);
 	timer_engine_t *ep = &cpudata()->timer_engine;
 	irql_t irql = spinlock_acquire_raise(&ep->lock);
+	spinlock_acquire(&tp->hdr.object_lock);
+	if (tp->engine) {
+		spinlock_release(&tp->hdr.object_lock);
+		spinlock_release_lower(&ep->lock, irql);
+		return;
+	}
+
 	tp->engine = ep;
 	tp->timer_state = kTimerQueued;
-	if (tp->mode == kTimerPeriodicMode)
-		tp->deadline = ep->clocksource->current_nanos() + tp->interval;
+
 	if (tp->dpc) {
 		tp->dpc->context1 = context1;
 		tp->dpc->context2 = context2;
 	}
+
+	tp->hdr.signalcount = 0;
+
 	HEAP_INSERT(timerlist, &ep->timerlist, tp);
+
 	dpc_enqueue(&cpudata()->timer_update, NULL, NULL);
+
+	spinlock_release(&tp->hdr.object_lock);
 	spinlock_release_lower(&ep->lock, irql);
 }
 

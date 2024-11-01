@@ -261,11 +261,13 @@ uacpi_thread_id uacpi_kernel_get_thread_id(void)
 uacpi_bool uacpi_kernel_acquire_mutex(uacpi_handle mutex, uacpi_u16 timeout)
 {
 	if (timeout == 0xFFFF) {
-		// inifnite wait
-		mutex_acquire(mutex);
-		return UACPI_TRUE;
+		timeout = kWaitTimeoutInfinite;
 	}
-	STUB;
+	int status = sched_wait_single(mutex, timeout);
+	if (status == kWaitStatusTimeout) {
+		return false;
+	}
+	return true;
 }
 
 void uacpi_kernel_release_mutex(uacpi_handle mutex)

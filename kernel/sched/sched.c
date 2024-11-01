@@ -66,8 +66,10 @@ void sched_init(scheduler_t *sched)
 	}
 
 	dpc_init(&sched->preemption_dpc, preemption_dpc_fn);
-	timer_initialize(&sched->preemption_timer, MS2NS(1000),
-			 &sched->preemption_dpc, kTimerOneshotMode);
+	timer_init(&sched->preemption_timer);
+
+	timer_set(&sched->preemption_timer, MS2NS(1000),
+		  &sched->preemption_dpc);
 }
 
 thread_t *sched_alloc_thread()
@@ -75,12 +77,6 @@ thread_t *sched_alloc_thread()
 	thread_t *thread = kmem_cache_alloc(thread_cache, 0);
 	assert(thread);
 	return thread;
-}
-
-void wake_thread(dpc_t *, void *context1, void *)
-{
-	thread_t *thread = context1;
-	sched_resume(thread);
 }
 
 void sched_init_thread(thread_t *thread, thread_start_fn ip, int priority,
@@ -96,9 +92,10 @@ void sched_init_thread(thread_t *thread, thread_start_fn ip, int priority,
 	thread->priority = priority;
 	thread->kstack_top = kstack;
 	thread->timeslice = 30;
-	dpc_init(&thread->wakeup_dpc, wake_thread);
-	timer_initialize(&thread->sleep_timer, -1, &thread->wakeup_dpc,
-			 kTimerOneshotMode);
+	thread->last_processor = cpudata()->cpu_id;
+	thread->wait_count = 0;
+	thread->wait_block_array = nullptr;
+	thread->wait_status = -1;
 	SPINLOCK_INIT(&thread->thread_lock);
 }
 
@@ -110,8 +107,8 @@ void sched_destroy_thread(thread_t *thread)
 static void check_timer(thread_t *thread, scheduler_t *sched)
 {
 	if (sched->queue_entries[thread->priority] > 0) {
-		timer_reset_in(&sched->preemption_timer,
-			       MS2NS(thread->timeslice));
+		timer_set_in(&sched->preemption_timer, MS2NS(thread->timeslice),
+			     &sched->preemption_dpc);
 		timer_install(&sched->preemption_timer, NULL, NULL);
 	} else {
 		timer_uninstall(&sched->preemption_timer, 0);
@@ -120,7 +117,7 @@ static void check_timer(thread_t *thread, scheduler_t *sched)
 
 // sched lock held
 // thread lock held
-static void sched_insert(scheduler_t *sched, thread_t *thread)
+void sched_insert(scheduler_t *sched, thread_t *thread)
 {
 	thread_t *current, *next, *compare;
 
@@ -184,6 +181,7 @@ void sched_reschedule()
 void sched_switch_thread(thread_t *current, thread_t *thread)
 {
 	cpudata()->thread_current = thread;
+	timer_uninstall(&thread->wait_timer, 0);
 	sched_port_switch(current, thread);
 	// old thread lock is released after thread switch
 }
@@ -227,6 +225,7 @@ void sched_resume(thread_t *thread)
 	spinlock_acquire(&sched->sched_lock);
 	sched_insert(sched, thread);
 	spinlock_release(&sched->sched_lock);
+	thread->last_processor = cpudata()->cpu_id;
 	spinlock_release_lower(&thread->thread_lock, old);
 }
 
@@ -277,9 +276,5 @@ thread_t *curthread()
 
 void sched_sleep(uint64_t ns)
 {
-	thread_t *thread = curthread();
-	timer_reset_in(&thread->sleep_timer, ns);
-	timer_install(&thread->sleep_timer, thread, NULL);
-	thread->state = kThreadStateWaiting;
-	sched_yield();
+	assert(!"impl");
 }

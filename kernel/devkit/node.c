@@ -15,7 +15,7 @@ dev_node_t *dev_node_create(const char *name)
 
 void dev_node_init(dev_node_t *obj, const char *name)
 {
-	obj_init(&obj->hdr);
+	obj_init(&obj->hdr, kObjTypeAnon);
 	TAILQ_INIT(&obj->children);
 	size_t namelen = strlen(name);
 	obj->name = kmalloc(namelen + 1);
@@ -35,7 +35,7 @@ void dev_node_attach(dev_node_t *node, dev_node_t *parent)
 	TAILQ_INSERT_TAIL(&parent->children, node, entry);
 	parent->childcount++;
 	node->parent = parent;
-	printk("insert node '%s' into parent '%s', new count %ld\n", node->name,
+	printk(DEBUG "insert node '%s' into parent '%s', new count %ld\n", node->name,
 	       parent->name, parent->childcount);
 }
 

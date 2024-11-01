@@ -4,19 +4,16 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
 #include <ndk/sched.h>
+#include <ndk/obj.h>
 
 typedef struct mutex {
-	thread_t *owner;
-	volatile uint8_t flag;
+	obj_header_t hdr;
 
-	spinlock_t queue_lock;
-	thread_queue_t wait_queue;
+	thread_t *owner;
 } mutex_t;
 
 void mutex_init(mutex_t *mutex);
-void mutex_acquire(mutex_t *mutex);
 void mutex_release(mutex_t *mutex);
 
 #ifdef __cplusplus

@@ -5,6 +5,7 @@
 #include <ndk/vm.h>
 #include <ndk/time.h>
 #include <DevKit/console.h>
+#include <assert.h>
 
 #include "cpuid.h"
 #include "asm.h"

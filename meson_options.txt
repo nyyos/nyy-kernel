@@ -1,1 +1,2 @@
 option('arch', type : 'combo', choices: ['amd64', 'riscv64', 'aarch64', 'linux'])
+option('test_mode', type : 'boolean', value : false)

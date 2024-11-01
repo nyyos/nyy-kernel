@@ -1,8 +1,9 @@
 #pragma once
 
+#include <heap.h>
+#include <ndk/obj.h>
 #include <stdint.h>
 #include <sys/queue.h>
-#include <heap.h>
 #include <ndk/ndk.h>
 #include <ndk/dpc.h>
 
@@ -23,10 +24,6 @@ typedef struct clocksource {
 
 typedef struct timer_engine timer_engine_t;
 
-enum timer_management_flags {
-	kTimerEngineLockHeld = (1 << 1),
-};
-
 enum timer_state {
 	kTimerUnused = 0,
 	kTimerFired,
@@ -40,13 +37,13 @@ enum timer_mode {
 };
 
 typedef struct timer {
+	obj_header_t hdr;
+
 	dpc_t *dpc;
 
 	uint64_t deadline;
 	uint64_t interval; // used by periodic mode
 	short timer_state;
-
-	int mode;
 
 	timer_engine_t *engine;
 	HEAP_ENTRY(timer) entry;
@@ -75,9 +72,9 @@ void time_engine_init(timer_engine_t *ep, clocksource_t *csp,
 timer_t *timer_allocate();
 void timer_free(timer_t *timer);
 
-void timer_initialize(timer_t *tp, uint64_t deadline, dpc_t *dpc, int mode);
-void timer_reset(timer_t *tp, uint64_t deadline);
-void timer_reset_in(timer_t *tp, uint64_t in_ns);
+void timer_init(timer_t *tp);
+void timer_set(timer_t *tp, uint64_t deadline, dpc_t *dpc);
+void timer_set_in(timer_t *tp, uint64_t in_ns, dpc_t *dpc);
 
 void timer_install(timer_t *tp, void *context1, void *context2);
 void timer_uninstall(timer_t *tp, int flags);

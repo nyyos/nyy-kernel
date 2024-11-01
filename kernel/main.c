@@ -1,3 +1,4 @@
+#include "ndk/mutex.h"
 #include <ndk/cpudata.h>
 #include <ndk/sched.h>
 #include <ndk/irq.h>
@@ -6,6 +7,7 @@
 #include <ndk/time.h>
 #include <DevKit/acpi.h>
 #include <DevKit/DevKit.h>
+#include <assert.h>
 
 static cpudata_t bsp_data;
 
@@ -28,7 +30,7 @@ void idle_thread_fn(void *, void *)
 {
 	assert(port_int_state() != 0);
 	for (;;) {
-		printk(INFO "cpu %d is idle\n", cpudata()->cpu_id);
+		printk(DEBUG "cpu %d is idle\n", cpudata()->cpu_id);
 		port_wait_nextint();
 	}
 }
@@ -84,6 +86,8 @@ void kickstart_kmain(void *, void *)
 	}
 }
 
+extern void test_runner();
+
 static void kmain_threaded(void *, void *)
 {
 	printk(INFO "entered threaded kmain\n");
@@ -107,6 +111,10 @@ static void kmain_threaded(void *, void *)
 #if 0 
 	extern uintptr_t __stack_chk_guard;
 	printk(WARN "stack chk guard: %ld\n", __stack_chk_guard);
+#endif
+
+#ifdef TEST_MODE
+	test_runner();
 #endif
 
 	// XXX: maybe reuse?

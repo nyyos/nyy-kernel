@@ -84,12 +84,15 @@ void port_start_cores()
 	struct limine_smp_response *res = smp_request.response;
 	for (size_t i = 0; i < res->cpu_count && i < MAX_CORES; i++) {
 		struct limine_smp_info *cpu = res->cpus[i];
-		if (cpu->lapic_id == 0)
+		if (cpu->lapic_id == 0) {
+			cpudata_set(0, cpudata());
 			continue;
+		}
 		struct smp_info *data = &ap_data[i];
 		data->ready = false;
 		cpu->extra_argument = (uint64_t)data;
 		cpu->goto_address = port_smp_entry;
+		cpudata_set(cpu->lapic_id, &data->data);
 	}
 	// synchronize all cores being up
 	for (size_t i = 0; i < MAX_CORES && i < res->cpu_count; i++) {

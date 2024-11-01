@@ -27,14 +27,40 @@ enum {
 	kThreadStateStandby,
 };
 
+typedef struct thread thread_t;
+typedef struct obj_header obj_header_t;
+
+typedef struct wait_block {
+	obj_header_t *object;
+	thread_t *thread;
+	TAILQ_ENTRY(wait_block) entry;
+} wait_block_t;
+
+enum {
+	kThreadWaitBlocks = 4,
+	kMaxWaitBlocks = 128,
+	kWaitTimeoutInfinite = -1,
+};
+
+enum {
+	kWaitStatusWaiting = 1,
+	kWaitStatusTimeout,
+};
+
 typedef struct thread {
 	context_t context;
 	spinlock_t thread_lock;
 
 	void *kstack_top;
 
-	dpc_t wakeup_dpc;
-	timer_t sleep_timer;
+	timer_t wait_timer;
+	dpc_t wait_dpc;
+	int wait_count;
+	int wait_status;
+	wait_block_t wait_blocks[kThreadWaitBlocks];
+	wait_block_t *wait_block_array;
+
+	int last_processor;
 
 	int timeslice; // in ms
 	int state;
@@ -60,6 +86,7 @@ void sched_init(scheduler_t *sched);
 void sched_kmem_init();
 void sched_reschedule();
 void sched_resume(thread_t *task);
+void sched_insert(scheduler_t *sched, thread_t *thread);
 void sched_preempt();
 void sched_yield();
 void sched_sleep(uint64_t ns);
@@ -77,3 +104,8 @@ void sched_init_thread(thread_t *thread, thread_start_fn startfn, int priority,
 [[gnu::noreturn]] void sched_exit_destroy();
 
 thread_t *curthread();
+
+bool sched_wait_single(void *object, long timeout_ms);
+int sched_wait_multi(int count, void **objects, long timeout_ms,
+		     wait_block_t *wait_block_array);
+void sched_unwait(thread_t *thread, int status);

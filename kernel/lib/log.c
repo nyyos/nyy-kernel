@@ -1,3 +1,4 @@
+#include "nyyconf.h"
 #define NANOPRINTF_IMPLEMENTATION
 #define NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS 1
 #define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
@@ -29,6 +30,18 @@ static spinlock_t console_list_lock = SPINLOCK_INITIALIZER();
 #define MSG_BUF_SIZE 512
 // has to align to ^2!
 #define MSGS_SIZE 1024
+
+#if defined(CONFIG_LOG_LEVEL_ERROR)
+#define LOG_LEVEL 0
+#elif defined(CONFIG_LOG_LEVEL_WARN)
+#define LOG_LEVEL 1
+#elif defined(CONFIG_LOG_LEVEL_INFO)
+#define LOG_LEVEL 2
+#elif defined(CONFIG_LOG_LEVEL_DEBUG)
+#define LOG_LEVEL 3
+#elif defined(CONFIG_LOG_LEVEL_TRACE)
+#define LOG_LEVEL 4
+#endif
 
 typedef struct log_message {
 	size_t msg_sz;
@@ -128,36 +141,42 @@ static spinlock_t print_lock = SPINLOCK_INITIALIZER();
 	buf[MSG_BUF_SIZE] = '\0';
 	int lvl = *fmt;
 
+	if (lvl < LOG_LEVEL) {
+		va_end(args);
+		return;
+	}
+
 	// get log level
 	switch (lvl) {
-	// info
+	// debug
 	case 1:
+		fmt++;
+		size = npf_snprintf(buf, MSG_BUF_SIZE, LOG_DEBUG);
+		break;
+	// trace
+	case 2:
+		fmt++;
+		size = npf_snprintf(buf, MSG_BUF_SIZE, LOG_TRACE);
+		break;
+	// info
+	case 3:
 		fmt++;
 		size = npf_snprintf(buf, MSG_BUF_SIZE, LOG_INFO);
 		break;
 	// warn
-	case 2:
+	case 4:
 		fmt++;
 		size = npf_snprintf(buf, MSG_BUF_SIZE, LOG_WARN);
 		break;
 	// error
-	case 3:
+	case 5:
 		fmt++;
 		size = npf_snprintf(buf, MSG_BUF_SIZE, LOG_ERR);
 		break;
-	// debug
-	case 4:
-		fmt++;
-		size = npf_snprintf(buf, MSG_BUF_SIZE, LOG_DEBUG);
-		break;
 	// panic
-	case 5:
-		fmt++;
-		size = npf_snprintf(buf, MSG_BUF_SIZE, LOG_PANIC);
-		break;
 	case 6:
 		fmt++;
-		size = npf_snprintf(buf, MSG_BUF_SIZE, LOG_TRACE);
+		size = npf_snprintf(buf, MSG_BUF_SIZE, LOG_PANIC);
 		break;
 	default:
 		size = 0;

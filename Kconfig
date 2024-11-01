@@ -1,6 +1,6 @@
 mainmenu "Nyy Kernel configuration"
 
-menu "Sanitizers"
+menu "Debug"
 
 config DISABLE_ASSERTS
   bool "Disable asserts in code"
@@ -13,6 +13,27 @@ config UBSAN
 config STACKGUARD
   bool "Enable stack protector"
   default y
+
+choice
+  prompt "Log level"
+  default LOG_LEVEL_INFO
+
+config LOG_LEVEL_DEBUG
+      bool "Enable debug messages"
+
+config LOG_LEVEL_TRACE
+      bool "Enable trace messages"
+
+config LOG_LEVEL_INFO
+      bool "Enable info messages"
+
+config LOG_LEVEL_WARN
+      bool "Enable warn messages"
+
+config LOG_LEVEL_ERROR
+      bool "Enable error messages"
+
+endchoice
 
 endmenu
 
