@@ -32,15 +32,17 @@ static spinlock_t console_list_lock = SPINLOCK_INITIALIZER();
 #define MSGS_SIZE 1024
 
 #if defined(CONFIG_LOG_LEVEL_ERROR)
-#define LOG_LEVEL 0
+#define LOG_LEVEL 5
 #elif defined(CONFIG_LOG_LEVEL_WARN)
-#define LOG_LEVEL 1
+#define LOG_LEVEL 4
 #elif defined(CONFIG_LOG_LEVEL_INFO)
-#define LOG_LEVEL 2
-#elif defined(CONFIG_LOG_LEVEL_DEBUG)
 #define LOG_LEVEL 3
 #elif defined(CONFIG_LOG_LEVEL_TRACE)
-#define LOG_LEVEL 4
+#define LOG_LEVEL 2
+#elif defined(CONFIG_LOG_LEVEL_DEBUG)
+#define LOG_LEVEL 1
+#elif
+#error "No log level"
 #endif
 
 typedef struct log_message {
@@ -141,10 +143,8 @@ static spinlock_t print_lock = SPINLOCK_INITIALIZER();
 	buf[MSG_BUF_SIZE] = '\0';
 	int lvl = *fmt;
 
-	if (lvl < LOG_LEVEL) {
-		va_end(args);
-		return;
-	}
+	if (lvl >= 1 && lvl <= 6 && lvl < LOG_LEVEL)
+		goto exit;
 
 	// get log level
 	switch (lvl) {
@@ -190,6 +190,7 @@ static spinlock_t print_lock = SPINLOCK_INITIALIZER();
 
 	spinlock_release_intr(&print_lock, oldstate);
 
+exit:
 	va_end(args);
 }
 

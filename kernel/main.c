@@ -1,4 +1,3 @@
-#include "ndk/mutex.h"
 #include <ndk/cpudata.h>
 #include <ndk/sched.h>
 #include <ndk/irq.h>

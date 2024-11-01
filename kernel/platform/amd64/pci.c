@@ -61,7 +61,7 @@ static uint32_t pci_mcfg_read(uint32_t segment, uint32_t bus, uint32_t slot,
 {
 	struct acpi_mcfg_allocation *entry = mcfg_bus(segment, bus);
 	if (entry == nullptr) {
-		printk("no entry for seg %d bus %d\n", segment, bus);
+		printk(WARN "no entry for seg %d bus %d\n", segment, bus);
 		return 0xFFFFFFFF;
 	}
 
@@ -126,7 +126,7 @@ void port_pci_init()
 			entry->address = virt + poff;
 
 			printk(DEBUG
-			       "mcfg entry %d: addr:%#lx segment:%d startbus:%d endbus:%d\n",
+			       "mcfg ent %d: addr:%#lx segment:%d bus:%d-%d\n",
 			       i, entry->address, entry->segment,
 			       entry->start_bus, entry->end_bus);
 		}

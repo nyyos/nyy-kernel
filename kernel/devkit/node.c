@@ -35,8 +35,8 @@ void dev_node_attach(dev_node_t *node, dev_node_t *parent)
 	TAILQ_INSERT_TAIL(&parent->children, node, entry);
 	parent->childcount++;
 	node->parent = parent;
-	printk(DEBUG "insert node '%s' into parent '%s', new count %ld\n", node->name,
-	       parent->name, parent->childcount);
+	printk(DEBUG "insert node '%s' into parent '%s'\n", node->name,
+	       parent->name);
 }
 
 // XXX: fix tree printing code
