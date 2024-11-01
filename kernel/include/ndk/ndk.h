@@ -13,6 +13,21 @@ extern "C" {
 #include <ndk/irql.h>
 #include <ndk/port.h>
 
+#define DEBUG "\1"
+#define TRACE "\2"
+#define INFO "\3"
+#define WARN "\4"
+#define ERR "\5"
+#define PANIC "\6"
+
+__attribute__((format(printf, 1, 2))) void printk(const char *fmt, ...);
+__attribute__((format(printf, 1, 2))) void printk_locked(const char *fmt, ...);
+void _printk_consoles_write(const char *buf, size_t size);
+void printk_init();
+
+[[gnu::noreturn]] void panic(const char *msg);
+[[gnu::noreturn]] void panic_withstack(const char *msg, uintptr_t stack);
+
 typedef struct spinlock {
 	volatile uint8_t flag;
 } spinlock_t;
@@ -85,21 +100,6 @@ static inline void spinlock_release_intr(spinlock_t *spinlock, int old)
 	spinlock_release(spinlock);
 	port_set_ints(old);
 }
-
-#define DEBUG "\1"
-#define TRACE "\2"
-#define INFO "\3"
-#define WARN "\4"
-#define ERR "\5"
-#define PANIC "\6"
-
-__attribute__((format(printf, 1, 2))) void printk(const char *fmt, ...);
-__attribute__((format(printf, 1, 2))) void printk_locked(const char *fmt, ...);
-void _printk_consoles_write(const char *buf, size_t size);
-void printk_init();
-
-[[gnu::noreturn]] void panic(const char *msg);
-[[gnu::noreturn]] void panic_withstack(const char *msg, uintptr_t stack);
 
 #ifdef __cplusplus
 }

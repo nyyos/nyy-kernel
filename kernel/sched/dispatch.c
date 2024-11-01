@@ -129,7 +129,6 @@ void sched_unwait(thread_t *thread, int status)
 
 	thread->wait_status = status;
 
-	thread->state = kThreadStateReady;
 	sched_insert(&cpudata()->scheduler, thread);
 }
 
@@ -151,7 +150,9 @@ void obj_satisfy(obj_header_t *hdr, bool all, int status)
 		TAILQ_REMOVE(&hdr->waitblock_list, wb, entry);
 		hdr->waitercount--;
 
+		spinlock_acquire(&cpudata()->scheduler.sched_lock);
 		wb_satisfy(wb);
+		spinlock_release(&cpudata()->scheduler.sched_lock);
 
 		spinlock_release(&thread->thread_lock);
 

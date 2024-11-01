@@ -116,9 +116,9 @@ void _printk_consoles_write(const char *buf, size_t size)
 	{
 		if (!elm->write)
 			continue;
-		int old = spinlock_acquire_intr(&elm->spinlock);
+		spinlock_acquire(&elm->spinlock);
 		elm->write(elm, buf, size);
-		spinlock_release_intr(&elm->spinlock, old);
+		spinlock_release(&elm->spinlock);
 	}
 	spinlock_release_intr(&console_list_lock, old);
 }

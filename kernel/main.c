@@ -86,6 +86,18 @@ void kickstart_kmain(void *, void *)
 }
 
 extern void test_runner();
+extern void PerformFireworksTest();
+
+static void printsmth(void *ctx1, void *)
+{
+	char *s = ctx1;
+	while (true) {
+		printk("%s", s);
+		asm volatile("hlt");
+	}
+
+	sched_exit_destroy();
+}
 
 static void kmain_threaded(void *, void *)
 {
@@ -115,6 +127,33 @@ static void kmain_threaded(void *, void *)
 #ifdef TEST_MODE
 	test_runner();
 #endif
+
+	timer_t timer;
+	timer_init(&timer);
+
+	timer_set_in(&timer, MS2NS(500), nullptr);
+	timer_install(&timer, nullptr, nullptr);
+
+	printk("wait start\n");
+
+#if 0
+#define SPAWN(s)                                                              \
+	do {                                                                  \
+		thread_t *t = sched_alloc_thread();                           \
+		sched_init_thread(t, printsmth, kPriorityMiddle, s, nullptr); \
+		sched_resume(t);                                              \
+	} while (0)
+
+	SPAWN("a");
+	SPAWN("b");
+	sched_wait_single(&timer, 5000);
+	printk(WARN "done\n");
+	SPAWN("c");
+	SPAWN("d");
+	SPAWN("e");
+#endif
+
+	PerformFireworksTest();
 
 	// XXX: maybe reuse?
 	sched_exit_destroy();

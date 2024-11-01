@@ -81,6 +81,10 @@ void timer_init(timer_t *tp)
 	tp->engine = NULL;
 	tp->deadline = -1;
 	tp->timer_state = kTimerUnused;
+
+	HEAP_CHILD(tp, entry) = nullptr;
+	HEAP_NEXT(tp, entry) = nullptr;
+	HEAP_PREV(tp, entry) = nullptr;
 }
 
 void timer_set(timer_t *tp, uint64_t deadline, dpc_t *dpc)
@@ -169,9 +173,9 @@ void timer_uninstall(timer_t *tp, int flags)
 
 		tp->engine = nullptr;
 
-		dpc_enqueue(&cpudata()->timer_update, NULL, NULL);
-
 		tp->timer_state = kTimerCanceled;
+
+		dpc_enqueue(&cpudata()->timer_update, NULL, NULL);
 
 		spinlock_release(&tp->hdr.object_lock);
 		spinlock_release_lower(&ep->lock, irql);

@@ -1,4 +1,5 @@
 kernel_sources += files(
   'runner.c',
-  'mutextst.c'
+  'mutextst.c',
+  'fireworks.c'
 )

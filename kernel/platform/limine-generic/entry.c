@@ -52,7 +52,7 @@ LIMINE_REQ static volatile struct limine_smp_request smp_request = {
 	.revision = 0
 };
 
-LIMINE_REQ static volatile struct limine_framebuffer_request fb_request = {
+LIMINE_REQ volatile struct limine_framebuffer_request fb_request = {
 	.id = LIMINE_FRAMEBUFFER_REQUEST,
 	.revision = 0
 };

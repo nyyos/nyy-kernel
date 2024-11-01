@@ -67,9 +67,6 @@ void sched_init(scheduler_t *sched)
 
 	dpc_init(&sched->preemption_dpc, preemption_dpc_fn);
 	timer_init(&sched->preemption_timer);
-
-	timer_set(&sched->preemption_timer, MS2NS(1000),
-		  &sched->preemption_dpc);
 }
 
 thread_t *sched_alloc_thread()
@@ -107,6 +104,7 @@ void sched_destroy_thread(thread_t *thread)
 static void check_timer(thread_t *thread, scheduler_t *sched)
 {
 	if (sched->queue_entries[thread->priority] > 0) {
+		timer_uninstall(&sched->preemption_timer, 0);
 		timer_set_in(&sched->preemption_timer, MS2NS(thread->timeslice),
 			     &sched->preemption_dpc);
 		timer_install(&sched->preemption_timer, NULL, NULL);
@@ -119,6 +117,8 @@ static void check_timer(thread_t *thread, scheduler_t *sched)
 // thread lock held
 void sched_insert(scheduler_t *sched, thread_t *thread)
 {
+	assert(spinlock_held(&cpudata()->scheduler.sched_lock));
+	assert(spinlock_held(&thread->thread_lock));
 	thread_t *current, *next, *compare;
 
 	thread->state = kThreadStateReady;
@@ -136,6 +136,7 @@ void sched_insert(scheduler_t *sched, thread_t *thread)
 		thread_queue_t *qp = &sched->run_queues[thread->priority];
 		sched->queue_entries[thread->priority]++;
 		TAILQ_INSERT_TAIL(qp, thread, entry);
+		check_timer(thread, sched);
 		return;
 	}
 
@@ -143,10 +144,12 @@ void sched_insert(scheduler_t *sched, thread_t *thread)
 
 	// preempt
 	cpudata()->thread_next = thread;
-	if (next)
+	if (next) {
 		sched_insert(sched, thread);
-	else
+	} else {
+		check_timer(thread, sched);
 		softint_issue(IRQL_DISPATCH);
+	}
 }
 
 static thread_t *sched_next(int priority)
@@ -276,5 +279,9 @@ thread_t *curthread()
 
 void sched_sleep(uint64_t ns)
 {
-	assert(!"impl");
+	timer_t timer;
+	timer_init(&timer);
+	timer_set_in(&timer, ns, nullptr);
+	timer_install(&timer, nullptr, nullptr);
+	sched_wait_single(&timer, kWaitTimeoutInfinite);
 }
