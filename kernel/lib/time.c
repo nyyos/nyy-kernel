@@ -76,7 +76,6 @@ void timer_free(timer_t *tp)
 void timer_init(timer_t *tp)
 {
 	assert(tp);
-	assert(tp->timer_state != kTimerQueued);
 	obj_init(tp, kObjTypeAnon);
 	tp->engine = NULL;
 	tp->deadline = -1;

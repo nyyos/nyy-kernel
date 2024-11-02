@@ -13,12 +13,13 @@ extern "C" {
 #include <ndk/irql.h>
 #include <ndk/port.h>
 
-#define DEBUG "\1"
-#define TRACE "\2"
-#define INFO "\3"
-#define WARN "\4"
-#define ERR "\5"
-#define PANIC "\6"
+#define SPAM "\1"
+#define DEBUG "\2"
+#define TRACE "\3"
+#define INFO "\4"
+#define WARN "\5"
+#define ERR "\6"
+#define PANIC "\7"
 
 __attribute__((format(printf, 1, 2))) void printk(const char *fmt, ...);
 __attribute__((format(printf, 1, 2))) void printk_locked(const char *fmt, ...);

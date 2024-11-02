@@ -20,6 +20,7 @@ static TAILQ_HEAD(console_list,
 		  console) console_list = TAILQ_HEAD_INITIALIZER(console_list);
 static spinlock_t console_list_lock = SPINLOCK_INITIALIZER();
 
+#define LOG_SPAM "[ \x1b[35mSPAM  \x1b[0m] "
 #define LOG_DEBUG "[ \x1b[35mDEBUG \x1b[0m] "
 #define LOG_INFO "[ \x1b[32mINFO  \x1b[0m] "
 #define LOG_WARN "[ \x1b[33mWARN  \x1b[0m] "
@@ -32,14 +33,16 @@ static spinlock_t console_list_lock = SPINLOCK_INITIALIZER();
 #define MSGS_SIZE 1024
 
 #if defined(CONFIG_LOG_LEVEL_ERROR)
-#define LOG_LEVEL 5
+#define LOG_LEVEL 6
 #elif defined(CONFIG_LOG_LEVEL_WARN)
-#define LOG_LEVEL 4
+#define LOG_LEVEL 5
 #elif defined(CONFIG_LOG_LEVEL_INFO)
-#define LOG_LEVEL 3
+#define LOG_LEVEL 4
 #elif defined(CONFIG_LOG_LEVEL_TRACE)
-#define LOG_LEVEL 2
+#define LOG_LEVEL 3
 #elif defined(CONFIG_LOG_LEVEL_DEBUG)
+#define LOG_LEVEL 2
+#elif defined(CONFIG_LOG_LEVEL_SPAM)
 #define LOG_LEVEL 1
 #elif
 #error "No log level"
@@ -148,33 +151,38 @@ static spinlock_t print_lock = SPINLOCK_INITIALIZER();
 
 	// get log level
 	switch (lvl) {
-	// debug
+	// spam
 	case 1:
+		fmt++;
+		size = npf_snprintf(buf, MSG_BUF_SIZE, LOG_SPAM);
+		break;
+	// debug
+	case 2:
 		fmt++;
 		size = npf_snprintf(buf, MSG_BUF_SIZE, LOG_DEBUG);
 		break;
 	// trace
-	case 2:
+	case 3:
 		fmt++;
 		size = npf_snprintf(buf, MSG_BUF_SIZE, LOG_TRACE);
 		break;
 	// info
-	case 3:
+	case 4:
 		fmt++;
 		size = npf_snprintf(buf, MSG_BUF_SIZE, LOG_INFO);
 		break;
 	// warn
-	case 4:
+	case 5:
 		fmt++;
 		size = npf_snprintf(buf, MSG_BUF_SIZE, LOG_WARN);
 		break;
 	// error
-	case 5:
+	case 6:
 		fmt++;
 		size = npf_snprintf(buf, MSG_BUF_SIZE, LOG_ERR);
 		break;
 	// panic
-	case 6:
+	case 7:
 		fmt++;
 		size = npf_snprintf(buf, MSG_BUF_SIZE, LOG_PANIC);
 		break;

@@ -18,6 +18,9 @@ choice
   prompt "Log level"
   default LOG_LEVEL_INFO
 
+config LOG_LEVEL_SPAM
+      bool "Enable spam messages (annoyingly verbose messages)"
+
 config LOG_LEVEL_DEBUG
       bool "Enable debug messages"
 

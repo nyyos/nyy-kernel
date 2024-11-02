@@ -29,7 +29,7 @@ void idle_thread_fn(void *, void *)
 {
 	assert(port_int_state() != 0);
 	for (;;) {
-		printk(DEBUG "cpu %d is idle\n", cpudata()->cpu_id);
+		printk(SPAM "cpu %d is idle\n", cpudata()->cpu_id);
 		port_wait_nextint();
 	}
 }
