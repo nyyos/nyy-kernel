@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ndk/mutex.h"
 #include <stddef.h>
 #include <sys/queue.h>
 
@@ -13,6 +14,8 @@
 #else
 #define KMEM_SKMEM_SECOND_ALIGN KMEM_ALIGN
 #endif
+
+#define KMEM_NOSLEEP (1 << 0) // if sleeping is allowed
 
 typedef struct kmem_cache kmem_cache_t;
 typedef struct kmem_slab kmem_slab_t;
@@ -46,6 +49,8 @@ typedef struct kmem_cache {
 	int (*constructor)(void *, void *);
 	void (*destructor)(void *, void *);
 	void *ctx;
+
+	mutex_t mutex;
 
 	SLIST_HEAD(buflist, kmem_bufctl) buflist;
 	LIST_HEAD(slablist, kmem_slab) slablist;

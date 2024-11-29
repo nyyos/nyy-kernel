@@ -198,7 +198,7 @@ void PerformDelay(int ms, void *)
 	Data.m_actY = ParentData->m_actY;
 	int ExplosionRange = ParentData->m_explosionRange;
 
-	//MmFreePool(ParentData);
+	kfree(ParentData, sizeof(FIREWORK_DATA));
 
 	int Angle = Rand() % 65536;
 	Data.m_velX = MUL_FP_FP(Cos(Angle), RandFPSign()) * ExplosionRange;
@@ -281,7 +281,7 @@ void PerformDelay(int ms, void *)
 
 	// Explode it!
 	// This spawns many, many threads! Cause why not, right?!
-	int PartCount = Rand() % 100 + 100;
+	int PartCount = Rand() % 30 + 30;
 
 	for (int i = 0; i < PartCount; i++) {
 		PFIREWORK_DATA DataClone = kmalloc(sizeof(FIREWORK_DATA));
@@ -299,6 +299,8 @@ void SpawnParticle(PFIREWORK_DATA Data)
 {
 	thread_t *Thrd = sched_alloc_thread();
 	sched_init_thread(Thrd, T_Particle, kPriorityMiddle, Data, nullptr);
+	Thrd->name = "Particle";
+	assert(Thrd);
 	sched_resume(Thrd);
 	/*
 	if (!Thrd)
@@ -313,6 +315,8 @@ void SpawnExplodeable()
 	thread_t *Thrd = sched_alloc_thread();
 	sched_init_thread(Thrd, T_Explodeable, kPriorityMiddle, nullptr,
 			  nullptr);
+	Thrd->name = "Explodeable";
+	assert(Thrd);
 	sched_resume(Thrd);
 	/*
 	if (Thrd)
@@ -320,8 +324,11 @@ void SpawnExplodeable()
 	*/
 }
 
+thread_t *fwt;
+
 void PerformFireworksTest()
 {
+	fwt = curthread();
 	Init();
 	g_randGen ^= RandTscBased();
 
@@ -332,14 +339,17 @@ void PerformFireworksTest()
 	timer_t Timer;
 	timer_init(&Timer);
 
+	curthread()->name = "Fireworks";
+	printk("%d\n", curthread()->priority);
+
 	while (true) {
-		int SpawnCount = Rand() % 2 + 1;
+		int SpawnCount = Rand() % 1 + 1;
 
 		for (int i = 0; i < SpawnCount; i++) {
-			printk(INFO "spawn\n");
 			SpawnExplodeable();
 		}
 
-		PerformDelay(2000 + Rand() % 2000, NULL);
+		//PerformDelay(2000 + Rand() % 2000, NULL);
+		PerformDelay(100, NULL);
 	}
 }

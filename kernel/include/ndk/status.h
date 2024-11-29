@@ -1,0 +1,10 @@
+#pragma once
+
+enum {
+	STATUS_OK = 0,
+	STATUS_TIMEOUT,
+	STATUS_WAITING,
+	STATUS_RANGE_WAIT = 0x1000,
+};
+
+#define STATUS_WAIT(n) (STATUS_RANGE_WAIT + (n))

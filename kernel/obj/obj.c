@@ -11,6 +11,7 @@ void obj_init(void *hdr, int type)
 	obj->refcnt = 1;
 	obj->ops = nullptr;
 	obj->signalcount = 0;
+	SPINLOCK_INIT(&obj->wb_lock);
 	obj->waitercount = 0;
 	TAILQ_INIT(&obj->waitblock_list);
 }

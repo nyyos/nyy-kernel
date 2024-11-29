@@ -17,12 +17,14 @@ typedef struct obj_header {
 	int type;
 	int signalcount;
 
+	spinlock_t wb_lock;
 	int waitercount;
 	TAILQ_HEAD(waitblock_list, wait_block) waitblock_list;
 } obj_header_t;
 
 enum {
 	kObjTypeAnon = 0,
+	kObjTypeTimer,
 	kObjTypeMutex,
 };
 

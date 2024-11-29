@@ -90,7 +90,7 @@ void sched_init_thread(thread_t *thread, thread_start_fn ip, int priority,
 	thread->kstack_top = kstack;
 	thread->timeslice = 30;
 	thread->last_processor = cpudata()->cpu_id;
-	thread->wait_count = 0;
+	thread->wait_count = -1;
 	thread->wait_block_array = nullptr;
 	thread->wait_status = -1;
 	SPINLOCK_INIT(&thread->thread_lock);
@@ -103,7 +103,7 @@ void sched_destroy_thread(thread_t *thread)
 
 static void check_timer(thread_t *thread, scheduler_t *sched)
 {
-	if (sched->queue_entries[thread->priority] > 0) {
+	if (sched->run_mask >> thread->priority) {
 		timer_uninstall(&sched->preemption_timer, 0);
 		timer_set_in(&sched->preemption_timer, MS2NS(thread->timeslice),
 			     &sched->preemption_dpc);
@@ -117,8 +117,9 @@ static void check_timer(thread_t *thread, scheduler_t *sched)
 // thread lock held
 void sched_insert(scheduler_t *sched, thread_t *thread)
 {
-	assert(spinlock_held(&cpudata()->scheduler.sched_lock));
+	assert(spinlock_held(&sched->sched_lock));
 	assert(spinlock_held(&thread->thread_lock));
+	assert(irql_current() >= IRQL_DISPATCH);
 	thread_t *current, *next, *compare;
 
 	thread->state = kThreadStateReady;
@@ -133,10 +134,11 @@ void sched_insert(scheduler_t *sched, thread_t *thread)
 	// XXX: check if thread should preempt correctly
 
 	if (compare->priority >= thread->priority) {
+		printk("comp:%s t:%s\n", compare->name, thread->name);
 		thread_queue_t *qp = &sched->run_queues[thread->priority];
-		sched->queue_entries[thread->priority]++;
 		TAILQ_INSERT_TAIL(qp, thread, entry);
-		check_timer(thread, sched);
+		sched->run_mask |= (1 << thread->priority);
+		check_timer(compare, sched);
 		return;
 	}
 
@@ -147,7 +149,6 @@ void sched_insert(scheduler_t *sched, thread_t *thread)
 	if (next) {
 		sched_insert(sched, thread);
 	} else {
-		check_timer(thread, sched);
 		softint_issue(IRQL_DISPATCH);
 	}
 }
@@ -155,14 +156,16 @@ void sched_insert(scheduler_t *sched, thread_t *thread)
 static thread_t *sched_next(int priority)
 {
 	scheduler_t *sched = lsched();
+	assert(spinlock_held(&sched->sched_lock));
 	for (int i = PRIORITY_COUNT; i > priority; i--) {
 		thread_queue_t *qp = &sched->run_queues[i - 1];
 		if (TAILQ_EMPTY(qp))
 			continue;
 		thread_t *tp = TAILQ_FIRST(qp);
 		TAILQ_REMOVE(qp, tp, entry);
-		check_timer(tp, sched);
-		sched->queue_entries[tp->priority]--;
+		if (TAILQ_EMPTY(qp)) {
+			sched->run_mask &= ~(1 << tp->priority);
+		}
 		return tp;
 	}
 	return nullptr;
@@ -173,12 +176,12 @@ void sched_reschedule()
 	thread_t *current = cpudata()->thread_current;
 	irql_t old = spinlock_acquire_raise(&lsched()->sched_lock);
 	thread_t *next = sched_next(current->priority);
-	spinlock_release_lower(&lsched()->sched_lock, old);
 	assert(current);
 	if (next != nullptr) {
 		// current should be preempted
 		cpudata()->thread_next = next;
 	}
+	spinlock_release_lower(&lsched()->sched_lock, old);
 }
 
 void sched_switch_thread(thread_t *current, thread_t *thread)
@@ -223,13 +226,13 @@ void sched_resume(thread_t *thread)
 		printk(ERR "THREAD STATE ALREADY READY\n");
 		return;
 	}
-	irql_t old = spinlock_acquire_raise(&thread->thread_lock);
 	scheduler_t *sched = lsched();
-	spinlock_acquire(&sched->sched_lock);
+	irql_t ipl = spinlock_acquire_raise(&sched->sched_lock);
+	spinlock_acquire(&thread->thread_lock);
 	sched_insert(sched, thread);
-	spinlock_release(&sched->sched_lock);
 	thread->last_processor = cpudata()->cpu_id;
-	spinlock_release_lower(&thread->thread_lock, old);
+	spinlock_release(&thread->thread_lock);
+	spinlock_release_lower(&sched->sched_lock, ipl);
 }
 
 static void sched_yield_internal(thread_t *current)
@@ -283,5 +286,7 @@ void sched_sleep(uint64_t ns)
 	timer_init(&timer);
 	timer_set_in(&timer, ns, nullptr);
 	timer_install(&timer, nullptr, nullptr);
+	assert(timer.hdr.waitercount == 0);
+	assert(curthread()->wait_count == -1);
 	sched_wait_single(&timer, kWaitTimeoutInfinite);
 }

@@ -1,3 +1,4 @@
+#include "ndk/status.h"
 #include <uacpi/types.h>
 #include <uacpi/platform/arch_helpers.h>
 #include <uacpi/kernel_api.h>
@@ -263,11 +264,7 @@ uacpi_bool uacpi_kernel_acquire_mutex(uacpi_handle mutex, uacpi_u16 timeout)
 	if (timeout == 0xFFFF) {
 		timeout = kWaitTimeoutInfinite;
 	}
-	int status = sched_wait_single(mutex, timeout);
-	if (status == kWaitStatusTimeout) {
-		return false;
-	}
-	return true;
+	return sched_wait_single(mutex, timeout) == STATUS_OK;
 }
 
 void uacpi_kernel_release_mutex(uacpi_handle mutex)

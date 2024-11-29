@@ -19,7 +19,7 @@ enum {
 };
 
 enum {
-	kThreadStateNull,
+	kThreadStateNull = 0,
 	kThreadStateReady,
 	kThreadStateRunning,
 	kThreadStateWaiting,
@@ -42,11 +42,6 @@ enum {
 	kWaitTimeoutInfinite = -1,
 };
 
-enum {
-	kWaitStatusWaiting = 1,
-	kWaitStatusTimeout,
-};
-
 typedef struct thread {
 	context_t context;
 	spinlock_t thread_lock;
@@ -66,6 +61,8 @@ typedef struct thread {
 	int state;
 	int priority;
 
+	const char *name;
+
 	TAILQ_ENTRY(thread) entry;
 } thread_t;
 
@@ -74,10 +71,10 @@ static_assert(offsetof(struct thread, thread_lock) == sizeof(context_t));
 typedef TAILQ_HEAD(, thread) thread_queue_t;
 
 typedef struct scheduler {
-	thread_queue_t run_queues[PRIORITY_COUNT];
-	unsigned int queue_entries[PRIORITY_COUNT];
-
 	spinlock_t sched_lock;
+	thread_queue_t run_queues[PRIORITY_COUNT];
+	uint16_t run_mask;
+
 	dpc_t preemption_dpc;
 	timer_t preemption_timer;
 } scheduler_t;
@@ -105,7 +102,7 @@ void sched_init_thread(thread_t *thread, thread_start_fn startfn, int priority,
 
 thread_t *curthread();
 
-bool sched_wait_single(void *object, long timeout_ms);
+int sched_wait_single(void *object, long timeout_ms);
 int sched_wait_multi(int count, void **objects, long timeout_ms,
 		     wait_block_t *wait_block_array);
 void sched_unwait(thread_t *thread, int status);
