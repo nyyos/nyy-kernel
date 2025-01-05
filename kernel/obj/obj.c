@@ -41,18 +41,3 @@ bool obj_is_signaled(obj_header_t *hdr, thread_t *thread)
 	}
 	return hdr->signalcount != 0;
 }
-
-void obj_acquire(obj_header_t *hdr, thread_t *thread)
-{
-	switch (hdr->type) {
-	case kObjTypeMutex: {
-		mutex_t *mtx = (mutex_t *)hdr;
-		mtx->owner = thread;
-		mtx->hdr.signalcount++;
-		break;
-	}
-	default: {
-		spinlock_acquire(&hdr->object_lock);
-	}
-	}
-}

@@ -136,7 +136,7 @@ static void kmain_threaded(void *, void *)
 
 	printk("wait start\n");
 
-#if 0
+#if 1
 #define SPAWN(s)                                                              \
 	do {                                                                  \
 		thread_t *t = sched_alloc_thread();                           \
@@ -147,7 +147,7 @@ static void kmain_threaded(void *, void *)
 	SPAWN("a");
 	SPAWN("b");
 	sched_wait_single(&timer, 5000);
-	printk(WARN "done\n");
+	printk(WARN "wait done\n");
 	SPAWN("c");
 	SPAWN("d");
 	SPAWN("e");

@@ -1,3 +1,5 @@
+#include "ndk/mutex.h"
+#include "ndk/sched.h"
 #include <assert.h>
 #include <string.h>
 
@@ -110,6 +112,8 @@ static void slab_free(kmem_slab_t *sp, kmem_bufctl_t *bufctl)
 
 void *kmem_cache_alloc(kmem_cache_t *cp, int kmflags)
 {
+	mutex_acquire(&cp->mutex, kWaitTimeoutInfinite);
+
 	if (LIST_EMPTY(&cp->slablist)) {
 		kmem_slab_t *slab;
 		if (cp->chunksize <= KMEM_SMALL_MAX) {
@@ -127,11 +131,14 @@ void *kmem_cache_alloc(kmem_cache_t *cp, int kmflags)
 		assert(cp->constructor(obj, cp->ctx) == 0);
 	}
 
+	mutex_release(&cp->mutex);
 	return obj;
 }
 
 void kmem_cache_free(kmem_cache_t *cp, void *obj)
 {
+	mutex_acquire(&cp->mutex, kWaitTimeoutInfinite);
+
 	kmem_slab_t *sp = NULL;
 	kmem_bufctl_t *bp;
 	if (cp->destructor != NULL)
@@ -155,6 +162,7 @@ void kmem_cache_free(kmem_cache_t *cp, void *obj)
 	}
 
 	slab_free(sp, bp);
+	mutex_release(&cp->mutex);
 }
 
 kmem_cache_t *kmem_cache_create(const char *name, size_t bufsize, size_t align,
@@ -188,6 +196,8 @@ kmem_cache_t *kmem_cache_create(const char *name, size_t bufsize, size_t align,
 	cp->constructor = constructor;
 	cp->destructor = destructor;
 	cp->ctx = ctx;
+
+	mutex_init(&cp->mutex);
 
 	LIST_INIT(&cp->full_slablist);
 	LIST_INIT(&cp->slablist);

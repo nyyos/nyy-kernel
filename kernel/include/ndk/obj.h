@@ -23,8 +23,23 @@ typedef struct obj_header {
 
 enum {
 	kObjTypeAnon = 0,
+	kObjTypeEvent,
+	kObjTypeEventNotif,
+	kObjTypeTimer,
 	kObjTypeMutex,
 };
+
+#define OBJ_ACQUIRE(obj) \
+	spinlock_acquire_raise(&((obj_header_t *)(obj))->object_lock);
+
+#define OBJ_ACQUIRE_ELEVATED(obj) \
+	spinlock_acquire(&((obj_header_t *)(obj))->object_lock);
+
+#define OBJ_RELEASE_ELEVATED(obj) \
+	spinlock_release(&((obj_header_t *)(obj))->object_lock);
+
+#define OBJ_RELEASE(obj, ipl) \
+	spinlock_release_lower(&((obj_header_t *)(obj))->object_lock, ipl);
 
 void obj_init(void *hdr, int type);
 

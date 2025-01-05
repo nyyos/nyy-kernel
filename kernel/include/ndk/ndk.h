@@ -43,13 +43,18 @@ static inline void spinlock_release(spinlock_t *spinlock)
 	__atomic_store_n(&spinlock->flag, 0, __ATOMIC_RELEASE);
 }
 
+#include <assert.h>
+
 static inline void spinlock_acquire(spinlock_t *spinlock)
 {
+	int tries = 0;
 	uint8_t unlocked = 0;
 	while (!__atomic_compare_exchange_n(&spinlock->flag, &unlocked, 1, 0,
 					    __ATOMIC_ACQUIRE,
 					    __ATOMIC_RELAXED)) {
+		assert(tries < 10000000 && "deadlock?");
 		unlocked = 0;
+		tries++;
 		port_spin_hint();
 	}
 }

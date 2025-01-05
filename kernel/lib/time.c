@@ -1,3 +1,4 @@
+#include "ndk/sched.h"
 #include <string.h>
 #include <ndk/time.h>
 #include <ndk/ndk.h>
@@ -76,7 +77,7 @@ void timer_free(timer_t *tp)
 void timer_init(timer_t *tp)
 {
 	assert(tp);
-	obj_init(tp, kObjTypeAnon);
+	obj_init(tp, kObjTypeTimer);
 	tp->engine = NULL;
 	tp->deadline = -1;
 	tp->timer_state = kTimerUnused;
@@ -141,7 +142,7 @@ static void time_engine_progress(dpc_t *dpc, void *context1, void *context2)
 
 		root->timer_state = kTimerFired;
 
-		if (root->hdr.waitercount) {
+		if (root->hdr.waitercount > 0) {
 			obj_satisfy(&root->hdr, true, 0);
 			root->hdr.signalcount = 1;
 		}

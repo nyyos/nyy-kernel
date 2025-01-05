@@ -187,4 +187,3 @@ void __ubsan_handle_missing_return(struct tu_handle_missing_return *data)
 {
 	tu_print_location("missing return", data->location);
 }
-
